@@ -1,0 +1,56 @@
+{
+	"Asbestos cement": 0.011,
+	"Asphalt": 0.016,
+	"Brick and cement mortar sewers": 0.015,
+	"Cast or Ductile iron,new": 0.012,
+	"Clay tile": 0.014,
+	"Concrete": {
+		"Steel forms": 0.011,
+		"Cement - finished": 0.012,
+		"Wooden forms": 0.015,
+		"Centrifugally spun": 0.013
+	},
+	"Corrugated metal": 0.022,
+	"Earth": {
+		"smooth": 0.018,
+		"clean": 0.022,
+		"gravelly": 0.025,
+		"weedy": 0.030,
+		"stony, cobbles": 0.035
+	},
+	"Floodplains": {
+		"Pasture, farmland": 0.035,
+		"Light brush": 0.050,
+		"Heavy brush": 0.075,
+		"Trees": 0.15
+	},
+	"Galvanized iron": 0.016,
+	"Gravel, firm": 0.023,
+	"Masonry": 0.025,
+	"Metal - corrugated": 0.022,
+	"Natural streams": {
+		"clean and straight": 0.030,
+		"major rivers": 0.035,
+		"sluggish with deep pools": 0.040,
+		"very poor condition": 0.060
+	},
+	"Plastic": 0.009,
+	"Polyethylene PE": 0.015,
+	"Polyvinyl Chloride PVC": 0.011,
+	"Rubble Masonry": 0.022,
+	"Steel": {
+		"Coal-tar enamel": 0.010,
+		"Smooth": 0.012,
+		"New unlined": 0.011,
+		"Riveted": 0.019
+	},
+	"Vitrified clay sewer pipe": 0.015,
+	"Wood": {
+		"Planed": 0.012,
+		"Unplaned": 0.013
+	},
+	"Reserve": {
+		"Road - flow in road and verges": 0.025,
+		"Grassed - regularly mowed": 0.035
+	}
+}

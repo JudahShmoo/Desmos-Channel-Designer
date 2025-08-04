@@ -1,0 +1,75 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+	<meta charset="UTF-8">
+	<meta name="viewport" content="width=device-width, initial-scale=1.0">
+	<title>Desmos Channel Designer</title>
+	<link rel="stylesheet" href="style.css">
+	<link rel="stylesheet" href="print.css" media="print">
+</head>
+<body>
+	<div id="header">
+		<input type="text" id="projectNumber" placeholder="####" title="Enter your project number">
+		<input type="text" id="projectName" placeholder="Project Name" title="Enter the name of your project">
+		<div id="toolbar">
+			<button type="button" id="saveButton" title="Save">Save</button>
+			<button type="button" id="saveAsButton" title="Save As">Save As</button>
+			<button type="button" id="loadButton" title="Load">Load</button>
+			<button type="button" id="printButton" title="Print">Print</button>
+		</div>
+	</div>
+	<div id="calculator">
+		<div id="mainCalculator"></div>
+		<div id="distancesCalculator"></div>
+		<input class="editor" type="hidden" step="0.01" id="heightEditor">
+		<input class="editor" type="hidden" step="0.01" id="distanceEditor">
+		<input class="editor" type="hidden" step="0.01" id="waterEditor">
+	</div>
+	<div id="sidebar">
+		<div class="paper" id="inputsBox">
+			<h3>Inputs</h3>
+			<h4>Channel Type</h4>
+			<select id="channelType" name="channelType" title="Select a channel type">
+				<option value="Roadway">Roadway</option>
+				<option value="Swale">Swale</option>
+				<option value="Trapezoidal">Trapezoidal</option>
+				<option value="Composite">Composite</option>
+				<option value="KerbAndChannel">Kerb and Channel</option>
+			</select>
+
+			<h4>Material</h4>
+			<select id="material" name="material" title="Select a material">
+			</select><input type="number" id="customMaterial" name="customMaterial" step="0.001" value="0.01" min="0" title="Enter custom value">
+
+			<h4>Slope</h4>
+			<div id="slopeOptions">
+				<div id="longitudinalOption" selected="true">
+					<label for="longitudinalInput">Longitudinal: </label>
+					<input type="number" id="longitudinalInput" name="longitudinalInput" step="0.1" value="1" min="0" max="100">
+				</div>
+				<div id="riseRunOption" selected="false">
+					<label for="Rise">Rise: </label>
+					<input type="number" id="Rise" name="Rise" step="0.1" value="1" min="0"><br>
+					<label for="Run">Run: </label>
+					<input type="number" id="Run" name="Run" step="0.1" value="100" min="0">
+				</div>
+			</div>
+		</div>
+		<div class="paper" id="calculationsBox">
+			<h3>Calculations</h3>
+			<p>Wetted Perimeter: <span id="wettedPerimeter"></span></p>
+			<p>Wetted Area: <span id="wettedArea"></span></p>
+			<p>Hydraulic Radius: <span id="hydraulicRadius"></span></p>
+			<hr>
+			<p>Velocity: <span id="velocity"></span></p>
+			<p>Flowrate: <span id="flowrate"></span> or <span id="flowrateL"></span></p>
+			<p>Depth: <span id="depth"></span></p>
+			<p>Depth&times;Velocity: <span id="depthVelocity"></span></p>
+		</div>
+	</div>
+	<div id="mainCalcImage"></div>
+	<div id="distancesCalcImage"></div>
+	<script src="https://www.desmos.com/api/v1.11/calculator.js?apiKey=3d49c4e94d084f6bb155d7344e24bb1a"></script>
+	<script type="module" src="script.js"></script>
+</body>
+</html>

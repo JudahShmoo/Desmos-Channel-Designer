@@ -1,0 +1,13 @@
+{
+	"keypad": false,
+	"expressions": false,
+	"settingsMenu": false,
+	"zoomButtons": false,
+	"showResetButtonOnGraphpaper": false,
+	"border": false,
+	"lockViewport": true,
+	"showGrid": false,
+	"showXAxis": false,
+	"showYAxis": false,
+	"actions": true
+}

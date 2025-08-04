@@ -1,0 +1,174 @@
+body {
+	margin: 0;
+	padding: 0;
+}
+
+#header {
+	width: 100%;
+	height: 3em;
+	display: flex;
+	input {
+		margin-left: 10px;
+		border: none;
+		font-size: 2em;
+		&:focus {
+			outline: none;
+		}
+	}
+	#projectNumber {
+		text-align: right;
+		flex: 1;
+	}
+	#projectName {
+		flex: 3;
+		border: none;
+	}
+	#toolbar {
+		flex: 1;
+		>button {
+			float: right;
+			padding: 5px 10px;
+			margin-top: 5px;
+			margin-right: 12px;
+			border-radius: 8px;
+			border: 1px solid #767676;
+			background-color: #f0f0f0;
+			&:disabled {
+				background-color: #e0e0e0;
+				cursor: default;
+			}
+			cursor: pointer;
+			&:hover {
+				background-color: #e0e0e0;
+			}
+		}
+	}
+}
+
+#calculator {
+	#mainCalculator {
+		position: absolute;
+		bottom: 10vh;
+		left: 0;
+		width: 78vw;
+		height: calc(90vh - 3em);
+	}
+
+	#distancesCalculator {
+		width: 78vw;
+		height: 10vh;
+		position: absolute;
+		bottom: 0;
+		left: 0;
+	}
+
+	input.editor {
+		width: 50px;
+		position: absolute;
+		top: 10px;
+		right: 10px;
+	}
+}
+
+#sidebar {
+	position: absolute;
+	top: 3em;
+	right: 0;
+	width: 20vw;
+	height: calc(90vh - 20px);
+	padding: 10px;
+	overflow: auto;
+
+	.paper {
+		border: 1px solid #ccc;
+		border-radius: 4px;
+		box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+		padding: 10px;
+	}
+
+	h3 {
+		margin-top: 2px;
+	}
+
+	#inputsBox {
+		margin-bottom: 10px;
+		input {
+			border-radius: 8px;
+			border: 1px solid #767676;
+		}
+		>h4 {
+			margin-top: 8px;
+			margin-bottom: 1px;
+		}
+		select {
+			border-radius: 8px;
+		}
+
+		#material {
+			box-sizing: border-box;
+			width: 100%;
+			&[data-chosen="custom"] {
+				width: 5.5em;
+				border-radius: 8px 0 0 8px;
+
+				& + #customMaterial {
+					display: inline-block;
+					box-sizing: border-box;
+					width: calc(100% - 5.5em);
+					border-radius: 0 8px 8px 0;
+					border: 1px solid #767676;
+					border-left: none;
+					height: 1.5em;
+					line-height: 1.5em;
+					vertical-align: top;
+				}
+			}
+			height: 1.5em;
+			line-height: 1.5em;
+			vertical-align: top;
+		}
+		#customMaterial {
+			display: none;
+		}
+
+		#slopeOptions {
+			display: flex;
+			flex-direction: row;
+			border: 1px solid #767676;
+			border-radius: 8px;
+
+			>div[selected="false"] {
+				label, input {
+					color: #c9c9c9;
+					cursor: pointer;
+				}
+				cursor: pointer;
+			}
+
+			>#riseRunOption {
+				padding: 10px;
+				width: 50%;
+				float: left;
+				>input {
+					width: 3em;
+				}
+			}
+			>#longitudinalOption {
+				padding: 10px;
+				width: 50%;
+				float: left;
+				border-right: 1px solid #767676;
+			}
+		}
+	}
+
+	#calculationsBox span {
+		background-color: #ccc;
+		padding: 5px;
+		border-radius: 8px;
+	}
+}
+
+#mainCalcImage, #distancesCalcImage {
+	display: none;
+}

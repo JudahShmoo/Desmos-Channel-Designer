@@ -1,0 +1,59 @@
+@page {
+	size: A4 landscape;
+	margin: 0;
+}
+
+
+#header {
+	display: block;
+	position: relative;
+	height: 5%;
+	margin-top: 2%;
+	
+	#toolbar {
+		display: none;
+	}
+}
+
+#calculator {
+	display: none;
+}
+
+#sidebar {
+	width: 25%;
+	#inputsBox {
+		select {
+			appearance: none;
+			text-overflow: '';
+			border: none;
+			border-radius: 0;
+		}
+		input {
+			border: none !important;
+		}
+
+		#slopeOptions {
+			display: inline-block;
+			border: none;
+			>div[selected="false"] {
+				display: none;
+			}
+			>div {
+				padding: 0 !important;
+				width: 100% !important;
+			}
+			>#longitudinalOption {
+				border-right: none;
+			}
+		}
+	}
+	#calculationsBox span {
+		-webkit-print-color-adjust: exact;
+		print-color-adjust: exact;
+		background-color: #ccc;
+	}
+}
+
+#mainCalcImage, #distancesCalcImage {
+	display: block;
+}

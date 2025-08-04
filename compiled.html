@@ -1,0 +1,829 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+	<meta charset="UTF-8">
+	<meta name="viewport" content="width=device-width, initial-scale=1.0">
+	<title>Desmos Channel Designer</title>
+	<link rel="stylesheet" href="compiled.css">
+	<style>
+body {
+	margin: 0;
+	padding: 0;
+}
+
+#header {
+	width: 100%;
+	height: 3em;
+	display: flex;
+	input {
+		margin-left: 10px;
+		border: none;
+		font-size: 2em;
+		&:focus {
+			outline: none;
+		}
+	}
+	#projectNumber {
+		text-align: right;
+		flex: 1;
+	}
+	#projectName {
+		flex: 3;
+		border: none;
+	}
+	#toolbar {
+		flex: 1;
+		>button {
+			float: right;
+			padding: 5px 10px;
+			margin-top: 5px;
+			margin-right: 12px;
+			border-radius: 8px;
+			border: 1px solid #767676;
+			background-color: #f0f0f0;
+			&:disabled {
+				background-color: #e0e0e0;
+				cursor: default;
+			}
+			cursor: pointer;
+			&:hover {
+				background-color: #e0e0e0;
+			}
+		}
+	}
+}
+
+#calculator {
+	#mainCalculator {
+		position: absolute;
+		bottom: 10vh;
+		left: 0;
+		width: 78vw;
+		height: calc(90vh - 3em);
+	}
+
+	#distancesCalculator {
+		width: 78vw;
+		height: 10vh;
+		position: absolute;
+		bottom: 0;
+		left: 0;
+	}
+
+	input.editor {
+		width: 50px;
+		position: absolute;
+		top: 10px;
+		right: 10px;
+	}
+}
+
+#sidebar {
+	position: absolute;
+	top: 3em;
+	right: 0;
+	width: 20vw;
+	height: calc(90vh - 20px);
+	padding: 10px;
+	overflow: auto;
+
+	.paper {
+		border: 1px solid #ccc;
+		border-radius: 4px;
+		box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+		padding: 10px;
+	}
+
+	h3 {
+		margin-top: 2px;
+	}
+
+	#inputsBox {
+		margin-bottom: 10px;
+		input {
+			border-radius: 8px;
+			border: 1px solid #767676;
+		}
+		>h4 {
+			margin-top: 8px;
+			margin-bottom: 1px;
+		}
+		select {
+			border-radius: 8px;
+		}
+
+		#material {
+			box-sizing: border-box;
+			width: 100%;
+			&[data-chosen="custom"] {
+				width: 5.5em;
+				border-radius: 8px 0 0 8px;
+
+				& + #customMaterial {
+					display: inline-block;
+					box-sizing: border-box;
+					width: calc(100% - 5.5em);
+					border-radius: 0 8px 8px 0;
+					border: 1px solid #767676;
+					border-left: none;
+					height: 1.5em;
+					line-height: 1.5em;
+					vertical-align: top;
+				}
+			}
+			height: 1.5em;
+			line-height: 1.5em;
+			vertical-align: top;
+		}
+		#customMaterial {
+			display: none;
+		}
+
+		#slopeOptions {
+			display: flex;
+			flex-direction: row;
+			border: 1px solid #767676;
+			border-radius: 8px;
+
+			>div[selected="false"] {
+				label, input {
+					color: #c9c9c9;
+					cursor: pointer;
+				}
+				cursor: pointer;
+			}
+
+			>#riseRunOption {
+				padding: 10px;
+				width: 50%;
+				float: left;
+				>input {
+					width: 3em;
+				}
+			}
+			>#longitudinalOption {
+				padding: 10px;
+				width: 50%;
+				float: left;
+				border-right: 1px solid #767676;
+			}
+		}
+	}
+
+	#calculationsBox span {
+		background-color: #ccc;
+		padding: 5px;
+		border-radius: 8px;
+	}
+}
+
+#mainCalcImage, #distancesCalcImage {
+	display: none;
+}
+
+@page {
+	size: A4 landscape;
+	margin: 0;
+}
+
+@media print {
+	#header {
+		display: block;
+		position: relative;
+		height: 5%;
+		margin-top: 2%;
+		
+		#toolbar {
+			display: none;
+		}
+	}
+
+	#calculator {
+		display: none;
+	}
+
+	#sidebar {
+		width: 25%;
+		#inputsBox {
+			select {
+				appearance: none;
+				text-overflow: '';
+				border: none;
+				border-radius: 0;
+			}
+			input {
+				border: none !important;
+			}
+
+			#slopeOptions {
+				display: inline-block;
+				border: none;
+				>div[selected="false"] {
+					display: none;
+				}
+				>div {
+					padding: 0 !important;
+					width: 100% !important;
+				}
+				>#longitudinalOption {
+					border-right: none;
+				}
+			}
+		}
+		#calculationsBox span {
+			-webkit-print-color-adjust: exact;
+			print-color-adjust: exact;
+			background-color: #ccc;
+		}
+	}
+
+	#mainCalcImage, #distancesCalcImage {
+		display: block;
+	}
+}
+	</style>
+</head>
+<body>
+	<div id="header">
+		<input type="text" id="projectNumber" placeholder="####" title="Enter your project number">
+		<input type="text" id="projectName" placeholder="Project Name" title="Enter the name of your project">
+		<div id="toolbar">
+			<button type="button" id="saveButton" title="Save">Save</button>
+			<button type="button" id="saveAsButton" title="Save As">Save As</button>
+			<button type="button" id="loadButton" title="Load">Load</button>
+			<button type="button" id="printButton" title="Print">Print</button>
+		</div>
+	</div>
+	<div id="calculator">
+		<div id="mainCalculator"></div>
+		<div id="distancesCalculator"></div>
+		<input class="editor" type="hidden" step="0.01" id="heightEditor">
+		<input class="editor" type="hidden" step="0.01" id="distanceEditor">
+		<input class="editor" type="hidden" step="0.01" id="waterEditor">
+	</div>
+	<div id="sidebar">
+		<div class="paper" id="inputsBox">
+			<h3>Inputs</h3>
+			<h4>Channel Type</h4>
+			<select id="channelType" name="channelType" title="Select a channel type">
+				<option value="Roadway">Roadway</option>
+				<option value="Swale">Swale</option>
+				<option value="Trapezoidal">Trapezoidal</option>
+				<option value="Composite">Composite</option>
+				<option value="KerbAndChannel">Kerb and Channel</option>
+			</select>
+
+			<h4>Material</h4>
+			<select id="material" name="material" title="Select a material">
+			</select><input type="number" id="customMaterial" name="customMaterial" step="0.001" value="0.01" min="0" title="Enter custom value">
+
+			<h4>Slope</h4>
+			<div id="slopeOptions">
+				<div id="longitudinalOption" selected="true">
+					<label for="longitudinalInput">Longitudinal: </label>
+					<input type="number" id="longitudinalInput" name="longitudinalInput" step="0.1" value="1" min="0" max="100">
+				</div>
+				<div id="riseRunOption" selected="false">
+					<label for="Rise">Rise: </label>
+					<input type="number" id="Rise" name="Rise" step="0.1" value="1" min="0"><br>
+					<label for="Run">Run: </label>
+					<input type="number" id="Run" name="Run" step="0.1" value="100" min="0">
+				</div>
+			</div>
+		</div>
+		<div class="paper" id="calculationsBox">
+			<h3>Calculations</h3>
+			<p>Wetted Perimeter: <span id="wettedPerimeter"></span></p>
+			<p>Wetted Area: <span id="wettedArea"></span></p>
+			<p>Hydraulic Radius: <span id="hydraulicRadius"></span></p>
+			<hr>
+			<p>Velocity: <span id="velocity"></span></p>
+			<p>Flowrate: <span id="flowrate"></span> or <span id="flowrateL"></span></p>
+			<p>Depth: <span id="depth"></span></p>
+			<p>Depth&times;Velocity: <span id="depthVelocity"></span></p>
+		</div>
+	</div>
+	<div id="mainCalcImage"></div>
+	<div id="distancesCalcImage"></div>
+	<script src="https://www.desmos.com/api/v1.11/calculator.js?apiKey=3d49c4e94d084f6bb155d7344e24bb1a"></script>
+	<script type="module">
+//#region fileManager.js
+const fileManager = {
+	supported: 'showOpenFilePicker' in window && 'showSaveFilePicker' in window,
+	fileHandle: null,
+	content: () => null,
+	requireSupport() {
+		if (!this.supported) {
+			alert('This feature is not supported in your browser. Please use a modern chromium based browser like Chrome or Edge.');
+			return false;
+		}
+		return true;
+	},
+	async saveFile() {
+		if (!this.requireSupport()) return;
+		if (!this.fileHandle){
+			await this.saveAs();
+			return;
+		}
+		const writable = await this.fileHandle.createWritable();
+		if (this.content() === null)
+			console.error('No content to save.');
+		await writable.write(this.content());
+		await writable.close();
+	},
+	async saveAs() {
+		if (!this.requireSupport()) return;
+		try {
+			this.fileHandle = await window.showSaveFilePicker({
+				types: [{
+					description: 'JSON file',
+					accept: {'application/json': ['.json']},
+				}],
+			});
+		} catch (err) {
+			if (err.name === 'AbortError') {
+				console.log(err);
+				return;
+			}
+		}
+		this.saveFile();
+	},
+	async openFile() {
+		if (!this.requireSupport()) return;
+		try {
+			[this.fileHandle] = await window.showOpenFilePicker();
+		}
+		catch (err) {
+			if (err.name === 'AbortError') {
+				console.log(err);
+				return;
+			}
+		}
+		return (await this.fileHandle.getFile()).text();
+	}
+};
+//#endregion
+//#region JSON
+const {Defaults, materials: materialsJSON, calculatorSettings: settings} = JSON.parse('{"calculatorSettings": {"keypad": false,"expressions": false,"settingsMenu": false,"zoomButtons": false,"showResetButtonOnGraphpaper": false,"border": false,"lockViewport": true,"showGrid": false,"showXAxis": false,"showYAxis": false,"actions": true},"materials": {"Asbestos cement": 0.011,"Asphalt": 0.016,"Brick and cement mortar sewers": 0.015,"Cast or Ductile iron,new": 0.012,"Clay tile": 0.014,"Concrete": {"Steel forms": 0.011,"Cement - finished": 0.012,"Wooden forms": 0.015,"Centrifugally spun": 0.013},"Corrugated metal": 0.022,"Earth": {"smooth": 0.018,"clean": 0.022,"gravelly": 0.025,"weedy": 0.030,"stony, cobbles": 0.035},"Floodplains": {"Pasture, farmland": 0.035,"Light brush": 0.050,"Heavy brush": 0.075,"Trees": 0.15},"Galvanized iron": 0.016,"Gravel, firm": 0.023,"Masonry": 0.025,"Metal - corrugated": 0.022,"Natural streams": {"clean and straight": 0.030,"major rivers": 0.035,"sluggish with deep pools": 0.040,"very poor condition": 0.060},"Plastic": 0.009,"Polyethylene PE": 0.015,"Polyvinyl Chloride PVC": 0.011,"Rubble Masonry": 0.022,"Steel": {"Coal-tar enamel": 0.010,"Smooth": 0.012,"New unlined": 0.011,"Riveted": 0.019},"Vitrified clay sewer pipe": 0.015,"Wood": {"Planed": 0.012,"Unplaned": 0.013},"Reserve": {"Road - flow in road and verges": 0.025,"Grassed - regularly mowed": 0.035}},	"Defaults": {		"Main": {			"Composite": {"version": 11,"randomSeed": "b9b1eac0e1ec660e40ad8c1a7ad79b83","graph": {"viewport": {"xmin": -0.5,"ymin": 7.78,"xmax": 12.5,"ymax": 10.42},"showGrid": false,"showXAxis": false,"showYAxis": false,"squareAxes": false,"__v12ViewportLatexStash": {"xmin": "-0.5","xmax": "12.5","ymin": "7.78","ymax": "10.42"}},"expressions": {"list": [{"type": "expression","id": "ManningsCoefficient","color": "#2d70b3","latex": "N_{ManningsCoefficient}=0.01"},{"type": "expression","id": "LongitudinalGradient","color": "#388c46","latex": "L_{ongitudinalGradient}=0.01"},{"type": "expression","id": "WaterLevel","color": "#6042a6","latex": "w_{aterLevel}=10"},{"type": "expression","id": "d","color": "#000000","latex": "d=\\\\left[1,1,1,1,1,1,1,1,1,1,1,1\\\\right]"},{"type": "expression","id": "h","color": "#6042a6","latex": "h=\\\\left[h_{1},h_{2},h_{3},h_{4},h_{5},h_{6},h_{7},h_{8},h_{9},h_{10},h_{11}\\\\right]"},{"type": "expression","id": "p","color": "#c74440","latex": "p=\\\\left[p_{1},p_{2},p_{3},p_{4},p_{5},p_{6},p_{7},p_{8},p_{9},p_{10},p_{11}\\\\right]"},{"type": "expression","id": "P","color": "#2d70b3","latex": "P=p\\\\left[2...11\\\\right]"},{"type": "expression","id": "WaterLevelPoint","color": "#2d70b3","latex": "\\\\left(0,w_{aterLevel}\\\\right)"},{"type": "expression","id": "WaterLevelLabel","color": "#2d70b3","latex": "\\\\left(0,w_{aterLevel}\\\\right)","showLabel": true,"label": "${w_{aterLevel}}","dragMode": "NONE","labelOrientation": "right","clickableInfo": {"enabled": true,"latex": "w_{aterEditing}\\\\to1"}},{"type": "expression","id": "WaterLevelLine","color": "#2d70b3","latex": "y=w_{aterLevel}\\\\cdot\\\\left\\\\{i_{ntercepts}\\\\left[i\\\\right]\\\\le x\\\\le i_{ntercepts}\\\\left[i+1\\\\right]\\\\right\\\\}\\\\operatorname{for}i=\\\\left[1,3...\\\\operatorname{length}\\\\left(i_{ntercepts}\\\\right)\\\\right]"},{"type": "expression","id": "interceptsWithUndefined","color": "#388c46","latex": "i_{nterceptsWithUndefined}=\\\\operatorname{unique}\\\\left(\\\\operatorname{join}\\\\left(\\\\left[\\\\frac{w_{aterLevel}-c}{m}\\\\left[i\\\\right]\\\\cdot\\\\left\\\\{p.x\\\\left[i\\\\right]\\\\le\\\\frac{w_{aterLevel}-c}{m}\\\\left[i\\\\right]<P.x\\\\left[i\\\\right]\\\\right\\\\}\\\\operatorname{for}i=\\\\left[1...\\\\operatorname{length}\\\\left(\\\\frac{w_{aterLevel}-c}{m}\\\\right)\\\\right]\\\\right],\\\\left[\\\\frac{0}{0}\\\\right]\\\\right)\\\\right)"},{"type": "expression","id": "intercepts","color": "#6042a6","latex": "i_{ntercepts}=\\\\operatorname{sort}\\\\left(i_{nterceptsWithUndefined}\\\\right)\\\\left[1...\\\\operatorname{length}\\\\left(i_{nterceptsWithUndefined}\\\\right)-1\\\\right]"},{"type": "expression","id": "Line","color": "#000000","latex": "y=m\\\\cdot x+c\\\\cdot\\\\left\\\\{p.x\\\\le x<P.x\\\\right\\\\}"},{"type": "expression","id": "m","color": "#000000","latex": "m=\\\\frac{P.y-p.y}{P.x-p.x}"},{"type": "expression","id": "c","color": "#c74440","latex": "c=-m\\\\cdot p.x+p.y"},{"type": "expression","id": "pPlusInts","color": "#2d70b3","latex": "p_{plusInts}=\\\\operatorname{join}\\\\left(p,\\\\left(i_{ntercepts},w_{aterLevel}\\\\right)\\\\right)\\\\left[\\\\operatorname{sort}\\\\left(\\\\left[1...\\\\operatorname{length}\\\\left(\\\\operatorname{join}\\\\left(p,\\\\left(i_{ntercepts},w_{aterLevel}\\\\right)\\\\right)\\\\right)\\\\right],\\\\operatorname{join}\\\\left(p,\\\\left(i_{ntercepts},w_{aterLevel}\\\\right)\\\\right).x\\\\right)\\\\right]","hidden": true},{"type": "expression","id": "PPlusInts","color": "#388c46","latex": "P_{plusInts}=p_{plusInts}\\\\left[2...\\\\operatorname{length}\\\\left(p_{plusInts}\\\\right)\\\\right]","hidden": true},{"type": "expression","id": "belowWater","color": "#6042a6","latex": "b_{elowWater}=p_{plusInts}\\\\cdot\\\\left\\\\{p_{plusInts}.y\\\\le w_{aterLevel}\\\\right\\\\}","hidden": true},{"type": "expression","id": "BelowWater","color": "#000000","latex": "B_{elowWater}=P_{plusInts}\\\\cdot\\\\left\\\\{P_{plusInts}.y\\\\le w_{aterLevel}\\\\right\\\\}","hidden": true},{"type": "expression","id": "lengths","color": "#c74440","latex": "l_{engths}=\\\\sqrt{\\\\left(B_{elowWater}-b_{elowWater}\\\\right).x^{2}+\\\\left(B_{elowWater}-b_{elowWater}\\\\right).y^{2}}"},{"type": "expression","id": "Areas","color": "#2d70b3","latex": "A_{reas}=\\\\left(\\\\frac{p_{plusInts}.y+P_{plusInts}.y}{2}-w_{aterLevel}\\\\right)\\\\cdot\\\\left(P_{plusInts}.x-p_{plusInts}.x\\\\right)"},{"type": "expression","id": "WettedPerimeter","color": "#388c46","latex": "W_{ettedPerimeter}=\\\\operatorname{total}\\\\left(\\\\left\\\\{l_{engths}>0:l_{engths},0\\\\right\\\\}\\\\right)"},{"type": "expression","id": "WettedArea","color": "#6042a6","latex": "W_{ettedArea}=\\\\operatorname{total}\\\\left(\\\\left\\\\{A_{reas}<0:-A_{reas},0\\\\right\\\\}\\\\right)"},{"type": "expression","id": "HydraulicRadius","color": "#000000","latex": "H_{ydraulicRadius}=\\\\frac{W_{ettedArea}}{W_{ettedPerimeter}}"},{"type": "expression","id": "Flowrate","color": "#c74440","latex": "f_{lowrate}=\\\\frac{W_{ettedArea}\\\\cdot\\\\sqrt[3]{H_{ydraulicRadius}^{2}}\\\\cdot\\\\sqrt{L_{ongitudinalGradient}}}{N_{ManningsCoefficient}}"},{"type": "expression","id": "Velocity","color": "#2d70b3","latex": "v_{elocity}=\\\\frac{f_{lowrate}}{W_{ettedArea}}"},{"type": "expression","id": "Depth","color": "#388c46","latex": "d_{epth}=w_{aterLevel}-\\\\min\\\\left(p.y\\\\right)"},{"type": "expression","id": "MinY","color": "#6042a6","latex": "m_{inY}=\\\\min\\\\left(p.y\\\\right)"},{"type": "expression","id": "MaxY","color": "#000000","latex": "m_{axY}=\\\\max\\\\left(p.y\\\\right)"},{"type": "expression","id": "h1","color": "#c74440","latex": "h_{1}=10.2","slider": {"hardMin": true,"min": "0","max": ""}},{"type": "expression","id": "h2","color": "#2d70b3","latex": "h_{2}=10.2","slider": {"hardMin": true,"min": "0","max": ""}},{"type": "expression","id": "h3","color": "#388c46","latex": "h_{3}=9.2","slider": {"hardMin": true,"min": "0","max": ""}},{"type": "expression","id": "h4","color": "#6042a6","latex": "h_{4}=9.2","slider": {"hardMin": true,"min": "0","max": ""}},{"type": "expression","id": "h5","color": "#000000","latex": "h_{5}=8.2","slider": {"hardMin": true,"min": "0","max": ""}},{"type": "expression","id": "h6","color": "#c74440","latex": "h_{6}=8","slider": {"hardMin": true,"min": "0","max": ""}},{"type": "expression","id": "h7","color": "#2d70b3","latex": "h_{7}=8.2","slider": {"hardMin": true,"min": "0","max": ""}},{"type": "expression","id": "h8","color": "#388c46","latex": "h_{8}=9.2","slider": {"hardMin": true,"min": "0","max": ""}},{"type": "expression","id": "h9","color": "#6042a6","latex": "h_{9}=9.2","slider": {"hardMin": true,"min": "0","max": ""}},{"type": "expression","id": "h10","color": "#000000","latex": "h_{10}=10.2","slider": {"hardMin": true,"min": "0","max": ""}},{"type": "expression","id": "h11","color": "#c74440","latex": "h_{11}=10.2","slider": {"hardMin": true,"min": "0","max": ""}},{"type": "expression","id": "p1","color": "#388c46","latex": "p_{1}=\\\\left(0,h_{1}\\\\right)","dragMode": "Y"},{"type": "expression","id": "p2","color": "#388c46","latex": "p_{2}=\\\\left(\\\\operatorname{total}\\\\left(d\\\\left[1...1\\\\right]\\\\right),h_{2}\\\\right)"},{"type": "expression","id": "p3","color": "#388c46","latex": "p_{3}=\\\\left(\\\\operatorname{total}\\\\left(d\\\\left[1...2\\\\right]\\\\right),h_{3}\\\\right)"},{"type": "expression","id": "p4","color": "#388c46","latex": "p_{4}=\\\\left(\\\\operatorname{total}\\\\left(d\\\\left[1...3\\\\right]\\\\right),h_{4}\\\\right)"},{"type": "expression","id": "p5","color": "#388c46","latex": "p_{5}=\\\\left(\\\\operatorname{total}\\\\left(d\\\\left[1...4\\\\right]\\\\right),h_{5}\\\\right)"},{"type": "expression","id": "p6","color": "#388c46","latex": "p_{6}=\\\\left(\\\\operatorname{total}\\\\left(d\\\\left[1...5\\\\right]\\\\right),h_{6}\\\\right)"},{"type": "expression","id": "p7","color": "#388c46","latex": "p_{7}=\\\\left(\\\\operatorname{total}\\\\left(d\\\\left[1...6\\\\right]\\\\right),h_{7}\\\\right)"},{"type": "expression","id": "p8","color": "#388c46","latex": "p_{8}=\\\\left(\\\\operatorname{total}\\\\left(d\\\\left[1...7\\\\right]\\\\right),h_{8}\\\\right)"},{"type": "expression","id": "p9","color": "#388c46","latex": "p_{9}=\\\\left(\\\\operatorname{total}\\\\left(d\\\\left[1...8\\\\right]\\\\right),h_{9}\\\\right)"},{"type": "expression","id": "p10","color": "#388c46","latex": "p_{10}=\\\\left(\\\\operatorname{total}\\\\left(d\\\\left[1...9\\\\right]\\\\right),h_{10}\\\\right)"},{"type": "expression","id": "p11","color": "#388c46","latex": "p_{11}=\\\\left(\\\\operatorname{total}\\\\left(d\\\\left[1...10\\\\right]\\\\right),h_{11}\\\\right)"},{"type": "expression","id": "p1Label","color": "#388c46","latex": "\\\\left(0,h_{1}\\\\right)","showLabel": true,"label": "${h_{1}}","dragMode": "NONE","clickableInfo": {"enabled": true,"latex": "e_{diting}\\\\to1"}},{"type": "expression","id": "p2Label","color": "#388c46","latex": "\\\\left(\\\\operatorname{total}\\\\left(d\\\\left[1...1\\\\right]\\\\right),h_{2}\\\\right)","showLabel": true,"label": "${h_{2}}","dragMode": "NONE","clickableInfo": {"enabled": true,"latex": "e_{diting}\\\\to2"}},{"type": "expression","id": "p3Label","color": "#388c46","latex": "\\\\left(\\\\operatorname{total}\\\\left(d\\\\left[1...2\\\\right]\\\\right),h_{3}\\\\right)","showLabel": true,"label": "${h_{3}}","dragMode": "NONE","clickableInfo": {"enabled": true,"latex": "e_{diting}\\\\to3"}},{"type": "expression","id": "p4Label","color": "#388c46","latex": "\\\\left(\\\\operatorname{total}\\\\left(d\\\\left[1...3\\\\right]\\\\right),h_{4}\\\\right)","showLabel": true,"label": "${h_{4}}","dragMode": "NONE","clickableInfo": {"enabled": true,"latex": "e_{diting}\\\\to4"}},{"type": "expression","id": "p5Label","color": "#388c46","latex": "\\\\left(\\\\operatorname{total}\\\\left(d\\\\left[1...4\\\\right]\\\\right),h_{5}\\\\right)","showLabel": true,"label": "${h_{5}}","dragMode": "NONE","clickableInfo": {"enabled": true,"latex": "e_{diting}\\\\to5"}},{"type": "expression","id": "p6Label","color": "#388c46","latex": "\\\\left(\\\\operatorname{total}\\\\left(d\\\\left[1...5\\\\right]\\\\right),h_{6}\\\\right)","showLabel": true,"label": "${h_{6}}","dragMode": "NONE","clickableInfo": {"enabled": true,"latex": "e_{diting}\\\\to6"}},{"type": "expression","id": "p7Label","color": "#388c46","latex": "\\\\left(\\\\operatorname{total}\\\\left(d\\\\left[1...6\\\\right]\\\\right),h_{7}\\\\right)","showLabel": true,"label": "${h_{7}}","dragMode": "NONE","clickableInfo": {"enabled": true,"latex": "e_{diting}\\\\to7"}},{"type": "expression","id": "p8Label","color": "#388c46","latex": "\\\\left(\\\\operatorname{total}\\\\left(d\\\\left[1...7\\\\right]\\\\right),h_{8}\\\\right)","showLabel": true,"label": "${h_{8}}","dragMode": "NONE","clickableInfo": {"enabled": true,"latex": "e_{diting}\\\\to8"}},{"type": "expression","id": "p9Label","color": "#388c46","latex": "\\\\left(\\\\operatorname{total}\\\\left(d\\\\left[1...8\\\\right]\\\\right),h_{9}\\\\right)","showLabel": true,"label": "${h_{9}}","dragMode": "NONE","clickableInfo": {"enabled": true,"latex": "e_{diting}\\\\to9"}},{"type": "expression","id": "p10Label","color": "#388c46","latex": "\\\\left(\\\\operatorname{total}\\\\left(d\\\\left[1...9\\\\right]\\\\right),h_{10}\\\\right)","showLabel": true,"label": "${h_{10}}","dragMode": "NONE","clickableInfo": {"enabled": true,"latex": "e_{diting}\\\\to10"}},{"type": "expression","id": "p11Label","color": "#388c46","latex": "\\\\left(\\\\operatorname{total}\\\\left(d\\\\left[1...10\\\\right]\\\\right),h_{11}\\\\right)","showLabel": true,"label": "${h_{11}}","dragMode": "NONE","clickableInfo": {"enabled": true,"latex": "e_{diting}\\\\to11"}},{"type": "expression","id": "editing","color": "#c74440","latex": "e_{diting}=0"},{"type": "expression","id": "waterEditing","color": "#c74440","latex": "w_{aterEditing}=0"},{"type": "expression","id": "p0Label","color": "#c74440","showLabel": true}]},"includeFunctionParametersInRandomSeed": true,"doNotMigrateMovablePointStyle": true},			"Swale": {"version":11,"randomSeed":"b9b1eac0e1ec660e40ad8c1a7ad79b83","graph":{"viewport":{"xmin":-2.573960904772184,"ymin":7.547706299443742,"xmax":9.661333212874874,"ymax":12.06535335826728},"showGrid":false,"showXAxis":false,"showYAxis":false,"squareAxes":false,"__v12ViewportLatexStash":{"xmin":"-2.573960904772184","xmax":"9.661333212874874","ymin":"7.547706299443742","ymax":"12.06535335826728"}},"expressions":{"list":[{"type":"expression","id":"ManningsCoefficient","color":"#2d70b3","latex":"N_{ManningsCoefficient}=0.01"},{"type":"expression","id":"LongitudinalGradient","color":"#388c46","latex":"L_{ongitudinalGradient}=0.01"},{"type":"expression","id":"WaterLevel","color":"#6042a6","latex":"w_{aterLevel}=10"},{"type":"expression","id":"d","color":"#000000","latex":"d=\\\\left[1,1,1,1,1,1,1\\\\right]"},{"type":"expression","id":"h","color":"#6042a6","latex":"h=\\\\left[h_{1},h_{2},h_{3},h_{4},h_{5},h_{6},h_{7}\\\\right]"},{"type":"expression","id":"p","color":"#c74440","latex":"p=\\\\left[p_{1},p_{2},p_{3},p_{4},p_{5},p_{6},p_{7}\\\\right]","hidden":true},{"type":"expression","id":"P","color":"#2d70b3","latex":"P=p\\\\left[2...7\\\\right]","hidden":true},{"type":"expression","id":"WaterLevelPoint","color":"#2d70b3","latex":"\\\\left(0,w_{aterLevel}\\\\right)"},{"type":"expression","id":"WaterLevelLabel","color":"#2d70b3","latex":"\\\\left(0,w_{aterLevel}\\\\right)","showLabel":true,"label":"${w_{aterLevel}}","dragMode":"NONE","labelOrientation":"right","clickableInfo":{"enabled":true,"latex":"w_{aterEditing}\\\\to1"}},{"type":"expression","id":"WaterLevelLine","color":"#2d70b3","latex":"y=w_{aterLevel}\\\\cdot\\\\left\\\\{i_{ntercepts}\\\\left[i\\\\right]\\\\le x\\\\le i_{ntercepts}\\\\left[i+1\\\\right]\\\\right\\\\}\\\\operatorname{for}i=\\\\left[1,3...\\\\operatorname{length}\\\\left(i_{ntercepts}\\\\right)\\\\right]"},{"type":"expression","id":"interceptsWithUndefined","color":"#388c46","latex":"i_{nterceptsWithUndefined}=\\\\operatorname{unique}\\\\left(\\\\operatorname{join}\\\\left(\\\\left[\\\\frac{w_{aterLevel}-c}{m}\\\\left[i\\\\right]\\\\cdot\\\\left\\\\{p.x\\\\left[i\\\\right]\\\\le\\\\frac{w_{aterLevel}-c}{m}\\\\left[i\\\\right]<P.x\\\\left[i\\\\right]\\\\right\\\\}\\\\operatorname{for}i=\\\\left[1...\\\\operatorname{length}\\\\left(\\\\frac{w_{aterLevel}-c}{m}\\\\right)\\\\right]\\\\right],\\\\left[\\\\frac{0}{0}\\\\right]\\\\right)\\\\right)"},{"type":"expression","id":"intercepts","color":"#6042a6","latex":"i_{ntercepts}=\\\\operatorname{sort}\\\\left(i_{nterceptsWithUndefined}\\\\right)\\\\left[1...\\\\operatorname{length}\\\\left(i_{nterceptsWithUndefined}\\\\right)-1\\\\right]"},{"type":"expression","id":"Line","color":"#000000","latex":"y=m\\\\cdot x+c\\\\cdot\\\\left\\\\{p.x\\\\le x<P.x\\\\right\\\\}"},{"type":"expression","id":"m","color":"#000000","latex":"m=\\\\frac{P.y-p.y}{P.x-p.x}"},{"type":"expression","id":"c","color":"#c74440","latex":"c=-m\\\\cdot p.x+p.y"},{"type":"expression","id":"pPlusInts","color":"#2d70b3","latex":"p_{plusInts}=\\\\operatorname{join}\\\\left(p,\\\\left(i_{ntercepts},w_{aterLevel}\\\\right)\\\\right)\\\\left[\\\\operatorname{sort}\\\\left(\\\\left[1...\\\\operatorname{length}\\\\left(\\\\operatorname{join}\\\\left(p,\\\\left(i_{ntercepts},w_{aterLevel}\\\\right)\\\\right)\\\\right)\\\\right],\\\\operatorname{join}\\\\left(p,\\\\left(i_{ntercepts},w_{aterLevel}\\\\right)\\\\right).x\\\\right)\\\\right]","hidden":true},{"type":"expression","id":"PPlusInts","color":"#388c46","latex":"P_{plusInts}=p_{plusInts}\\\\left[2...\\\\operatorname{length}\\\\left(p_{plusInts}\\\\right)\\\\right]","hidden":true},{"type":"expression","id":"belowWater","color":"#6042a6","latex":"b_{elowWater}=p_{plusInts}\\\\cdot\\\\left\\\\{p_{plusInts}.y\\\\le w_{aterLevel}\\\\right\\\\}","hidden":true},{"type":"expression","id":"BelowWater","color":"#000000","latex":"B_{elowWater}=P_{plusInts}\\\\cdot\\\\left\\\\{P_{plusInts}.y\\\\le w_{aterLevel}\\\\right\\\\}","hidden":true},{"type":"expression","id":"lengths","color":"#c74440","latex":"l_{engths}=\\\\sqrt{\\\\left(B_{elowWater}-b_{elowWater}\\\\right).x^{2}+\\\\left(B_{elowWater}-b_{elowWater}\\\\right).y^{2}}"},{"type":"expression","id":"Areas","color":"#2d70b3","latex":"A_{reas}=\\\\left(\\\\frac{p_{plusInts}.y+P_{plusInts}.y}{2}-w_{aterLevel}\\\\right)\\\\cdot\\\\left(P_{plusInts}.x-p_{plusInts}.x\\\\right)"},{"type":"expression","id":"WettedPerimeter","color":"#388c46","latex":"W_{ettedPerimeter}=\\\\operatorname{total}\\\\left(\\\\left\\\\{l_{engths}>0:l_{engths},0\\\\right\\\\}\\\\right)"},{"type":"expression","id":"WettedArea","color":"#6042a6","latex":"W_{ettedArea}=\\\\operatorname{total}\\\\left(\\\\left\\\\{A_{reas}<0:-A_{reas},0\\\\right\\\\}\\\\right)"},{"type":"expression","id":"HydraulicRadius","color":"#000000","latex":"H_{ydraulicRadius}=\\\\frac{W_{ettedArea}}{W_{ettedPerimeter}}"},{"type":"expression","id":"Flowrate","color":"#c74440","latex":"f_{lowrate}=\\\\frac{W_{ettedArea}\\\\cdot\\\\sqrt[3]{H_{ydraulicRadius}^{2}}\\\\cdot\\\\sqrt{L_{ongitudinalGradient}}}{N_{ManningsCoefficient}}"},{"type":"expression","id":"Velocity","color":"#2d70b3","latex":"v_{elocity}=\\\\frac{f_{lowrate}}{W_{ettedArea}}"},{"type":"expression","id":"Depth","color":"#388c46","latex":"d_{epth}=w_{aterLevel}-\\\\min\\\\left(p.y\\\\right)"},{"type":"expression","id":"MinY","color":"#6042a6","latex":"m_{inY}=\\\\min\\\\left(p.y\\\\right)"},{"type":"expression","id":"MaxY","color":"#000000","latex":"m_{axY}=\\\\max\\\\left(p.y\\\\right)"},{"type":"expression","id":"h1","color":"#c74440","latex":"h_{1}=10.15","slider":{"hardMin":true,"min":"0"}},{"type":"expression","id":"h2","color":"#2d70b3","latex":"h_{2}=10.1","slider":{"hardMin":true,"min":"0"}},{"type":"expression","id":"h3","color":"#388c46","latex":"h_{3}=9.8","slider":{"hardMin":true,"min":"0","max":""}},{"type":"expression","id":"h4","color":"#6042a6","latex":"h_{4}=9.6","slider":{"hardMin":true,"min":"0"}},{"type":"expression","id":"h5","color":"#000000","latex":"h_{5}=9.8","slider":{"hardMin":true,"min":"0","max":""}},{"type":"expression","id":"h6","color":"#c74440","latex":"h_{6}=10.1","slider":{"hardMin":true,"min":"0"}},{"type":"expression","id":"h7","color":"#c74440","latex":"h_{7}=10.15"},{"type":"expression","id":"p1","color":"#388c46","latex":"p_{1}=\\\\left(0,h_{1}\\\\right)","dragMode":"Y"},{"type":"expression","id":"p2","color":"#388c46","latex":"p_{2}=\\\\left(\\\\operatorname{total}\\\\left(d\\\\left[1...1\\\\right]\\\\right),h_{2}\\\\right)"},{"type":"expression","id":"p3","color":"#388c46","latex":"p_{3}=\\\\left(\\\\operatorname{total}\\\\left(d\\\\left[1...2\\\\right]\\\\right),h_{3}\\\\right)"},{"type":"expression","id":"p4","color":"#388c46","latex":"p_{4}=\\\\left(\\\\operatorname{total}\\\\left(d\\\\left[1...3\\\\right]\\\\right),h_{4}\\\\right)"},{"type":"expression","id":"p5","color":"#388c46","latex":"p_{5}=\\\\left(\\\\operatorname{total}\\\\left(d\\\\left[1...4\\\\right]\\\\right),h_{5}\\\\right)"},{"type":"expression","id":"p6","color":"#388c46","latex":"p_{6}=\\\\left(\\\\operatorname{total}\\\\left(d\\\\left[1...5\\\\right]\\\\right),h_{6}\\\\right)"},{"type":"expression","id":"3","color":"#388c46","latex":"p_{7}=\\\\left(\\\\operatorname{total}\\\\left(d\\\\left[1...6\\\\right]\\\\right),h_{7}\\\\right)"},{"type":"expression","id":"p1Label","color":"#388c46","latex":"\\\\left(0,h_{1}\\\\right)","showLabel":true,"label":"${h_{1}}","dragMode":"NONE","clickableInfo":{"enabled":true,"latex":"e_{diting}\\\\to1"}},{"type":"expression","id":"p2Label","color":"#388c46","latex":"\\\\left(\\\\operatorname{total}\\\\left(d\\\\left[1...1\\\\right]\\\\right),h_{2}\\\\right)","showLabel":true,"label":"${h_{2}}","dragMode":"NONE","clickableInfo":{"enabled":true,"latex":"e_{diting}\\\\to2"}},{"type":"expression","id":"p3Label","color":"#388c46","latex":"\\\\left(\\\\operatorname{total}\\\\left(d\\\\left[1...2\\\\right]\\\\right),h_{3}\\\\right)","showLabel":true,"label":"${h_{3}}","dragMode":"NONE","clickableInfo":{"enabled":true,"latex":"e_{diting}\\\\to3"}},{"type":"expression","id":"p4Label","color":"#388c46","latex":"\\\\left(\\\\operatorname{total}\\\\left(d\\\\left[1...3\\\\right]\\\\right),h_{4}\\\\right)","showLabel":true,"label":"${h_{4}}","dragMode":"NONE","clickableInfo":{"enabled":true,"latex":"e_{diting}\\\\to4"}},{"type":"expression","id":"p5Label","color":"#388c46","latex":"\\\\left(\\\\operatorname{total}\\\\left(d\\\\left[1...4\\\\right]\\\\right),h_{5}\\\\right)","showLabel":true,"label":"${h_{5}}","dragMode":"NONE","clickableInfo":{"enabled":true,"latex":"e_{diting}\\\\to5"}},{"type":"expression","id":"p6Label","color":"#388c46","latex":"\\\\left(\\\\operatorname{total}\\\\left(d\\\\left[1...5\\\\right]\\\\right),h_{6}\\\\right)","showLabel":true,"label":"${h_{6}}","dragMode":"NONE","clickableInfo":{"enabled":true,"latex":"e_{diting}\\\\to6"}},{"type":"expression","id":"4","color":"#388c46","latex":"\\\\left(\\\\operatorname{total}\\\\left(d\\\\left[1...6\\\\right]\\\\right),h_{7}\\\\right)","showLabel":true,"label":"${h_{7}}","dragMode":"NONE","clickableInfo":{"enabled":true,"latex":"e_{diting}\\\\to7"}},{"type":"expression","id":"editing","color":"#c74440","latex":"e_{diting}=0"},{"type":"expression","id":"waterEditing","color":"#c74440","latex":"w_{aterEditing}=0"},{"type":"expression","id":"p0Label","color":"#c74440","showLabel":true}]},"includeFunctionParametersInRandomSeed":true,"doNotMigrateMovablePointStyle":true},			"Trapezoidal": {"version":11,"randomSeed":"b9b1eac0e1ec660e40ad8c1a7ad79b83","graph":{"viewport":{"xmin":-2.545262013174888,"ymin":7.54770629944374,"xmax":9.69003210447217,"ymax":12.065353358267279},"showGrid":false,"showXAxis":false,"showYAxis":false,"squareAxes":false,"__v12ViewportLatexStash":{"xmin":"-2.545262013174888","xmax":"9.69003210447217","ymin":"7.54770629944374","ymax":"12.065353358267279"}},"expressions":{"list":[{"type":"expression","id":"ManningsCoefficient","color":"#2d70b3","latex":"N_{ManningsCoefficient}=0.01"},{"type":"expression","id":"LongitudinalGradient","color":"#388c46","latex":"L_{ongitudinalGradient}=0.01"},{"type":"expression","id":"WaterLevel","color":"#6042a6","latex":"w_{aterLevel}=10"},{"type":"expression","id":"d","color":"#000000","latex":"d=\\\\left[1,1,1,1,1,1\\\\right]"},{"type":"expression","id":"h","color":"#6042a6","latex":"h=\\\\left[h_{1},h_{2},h_{3},h_{4},h_{5},h_{6}\\\\right]"},{"type":"expression","id":"p","color":"#c74440","latex":"p=\\\\left[p_{1},p_{2},p_{3},p_{4},p_{5},p_{6}\\\\right]"},{"type":"expression","id":"P","color":"#2d70b3","latex":"P=p\\\\left[2...11\\\\right]"},{"type":"expression","id":"WaterLevelPoint","color":"#2d70b3","latex":"\\\\left(0,w_{aterLevel}\\\\right)"},{"type":"expression","id":"WaterLevelLabel","color":"#2d70b3","latex":"\\\\left(0,w_{aterLevel}\\\\right)","showLabel":true,"label":"${w_{aterLevel}}","dragMode":"NONE","labelOrientation":"right","clickableInfo":{"enabled":true,"latex":"w_{aterEditing}\\\\to1"}},{"type":"expression","id":"WaterLevelLine","color":"#2d70b3","latex":"y=w_{aterLevel}\\\\cdot\\\\left\\\\{i_{ntercepts}\\\\left[i\\\\right]\\\\le x\\\\le i_{ntercepts}\\\\left[i+1\\\\right]\\\\right\\\\}\\\\operatorname{for}i=\\\\left[1,3...\\\\operatorname{length}\\\\left(i_{ntercepts}\\\\right)\\\\right]"},{"type":"expression","id":"interceptsWithUndefined","color":"#388c46","latex":"i_{nterceptsWithUndefined}=\\\\operatorname{unique}\\\\left(\\\\operatorname{join}\\\\left(\\\\left[\\\\frac{w_{aterLevel}-c}{m}\\\\left[i\\\\right]\\\\cdot\\\\left\\\\{p.x\\\\left[i\\\\right]\\\\le\\\\frac{w_{aterLevel}-c}{m}\\\\left[i\\\\right]<P.x\\\\left[i\\\\right]\\\\right\\\\}\\\\operatorname{for}i=\\\\left[1...\\\\operatorname{length}\\\\left(\\\\frac{w_{aterLevel}-c}{m}\\\\right)\\\\right]\\\\right],\\\\left[\\\\frac{0}{0}\\\\right]\\\\right)\\\\right)"},{"type":"expression","id":"intercepts","color":"#6042a6","latex":"i_{ntercepts}=\\\\operatorname{sort}\\\\left(i_{nterceptsWithUndefined}\\\\right)\\\\left[1...\\\\operatorname{length}\\\\left(i_{nterceptsWithUndefined}\\\\right)-1\\\\right]"},{"type":"expression","id":"Line","color":"#000000","latex":"y=m\\\\cdot x+c\\\\cdot\\\\left\\\\{p.x\\\\le x<P.x\\\\right\\\\}"},{"type":"expression","id":"m","color":"#000000","latex":"m=\\\\frac{P.y-p.y}{P.x-p.x}"},{"type":"expression","id":"c","color":"#c74440","latex":"c=-m\\\\cdot p.x+p.y"},{"type":"expression","id":"pPlusInts","color":"#2d70b3","latex":"p_{plusInts}=\\\\operatorname{join}\\\\left(p,\\\\left(i_{ntercepts},w_{aterLevel}\\\\right)\\\\right)\\\\left[\\\\operatorname{sort}\\\\left(\\\\left[1...\\\\operatorname{length}\\\\left(\\\\operatorname{join}\\\\left(p,\\\\left(i_{ntercepts},w_{aterLevel}\\\\right)\\\\right)\\\\right)\\\\right],\\\\operatorname{join}\\\\left(p,\\\\left(i_{ntercepts},w_{aterLevel}\\\\right)\\\\right).x\\\\right)\\\\right]","hidden":true},{"type":"expression","id":"PPlusInts","color":"#388c46","latex":"P_{plusInts}=p_{plusInts}\\\\left[2...\\\\operatorname{length}\\\\left(p_{plusInts}\\\\right)\\\\right]","hidden":true},{"type":"expression","id":"belowWater","color":"#6042a6","latex":"b_{elowWater}=p_{plusInts}\\\\cdot\\\\left\\\\{p_{plusInts}.y\\\\le w_{aterLevel}\\\\right\\\\}","hidden":true},{"type":"expression","id":"BelowWater","color":"#000000","latex":"B_{elowWater}=P_{plusInts}\\\\cdot\\\\left\\\\{P_{plusInts}.y\\\\le w_{aterLevel}\\\\right\\\\}","hidden":true},{"type":"expression","id":"lengths","color":"#c74440","latex":"l_{engths}=\\\\sqrt{\\\\left(B_{elowWater}-b_{elowWater}\\\\right).x^{2}+\\\\left(B_{elowWater}-b_{elowWater}\\\\right).y^{2}}"},{"type":"expression","id":"Areas","color":"#2d70b3","latex":"A_{reas}=\\\\left(\\\\frac{p_{plusInts}.y+P_{plusInts}.y}{2}-w_{aterLevel}\\\\right)\\\\cdot\\\\left(P_{plusInts}.x-p_{plusInts}.x\\\\right)"},{"type":"expression","id":"WettedPerimeter","color":"#388c46","latex":"W_{ettedPerimeter}=\\\\operatorname{total}\\\\left(\\\\left\\\\{l_{engths}>0:l_{engths},0\\\\right\\\\}\\\\right)"},{"type":"expression","id":"WettedArea","color":"#6042a6","latex":"W_{ettedArea}=\\\\operatorname{total}\\\\left(\\\\left\\\\{A_{reas}<0:-A_{reas},0\\\\right\\\\}\\\\right)"},{"type":"expression","id":"HydraulicRadius","color":"#000000","latex":"H_{ydraulicRadius}=\\\\frac{W_{ettedArea}}{W_{ettedPerimeter}}"},{"type":"expression","id":"Flowrate","color":"#c74440","latex":"f_{lowrate}=\\\\frac{W_{ettedArea}\\\\cdot\\\\sqrt[3]{H_{ydraulicRadius}^{2}}\\\\cdot\\\\sqrt{L_{ongitudinalGradient}}}{N_{ManningsCoefficient}}"},{"type":"expression","id":"Velocity","color":"#2d70b3","latex":"v_{elocity}=\\\\frac{f_{lowrate}}{W_{ettedArea}}"},{"type":"expression","id":"Depth","color":"#388c46","latex":"d_{epth}=w_{aterLevel}-\\\\min\\\\left(p.y\\\\right)"},{"type":"expression","id":"MinY","color":"#6042a6","latex":"m_{inY}=\\\\min\\\\left(p.y\\\\right)"},{"type":"expression","id":"MaxY","color":"#000000","latex":"m_{axY}=\\\\max\\\\left(p.y\\\\right)"},{"type":"expression","id":"h1","color":"#c74440","latex":"h_{1}=10.15","slider":{"hardMin":true,"min":"0"}},{"type":"expression","id":"h2","color":"#2d70b3","latex":"h_{2}=10.1","slider":{"hardMin":true,"min":"0"}},{"type":"expression","id":"h3","color":"#388c46","latex":"h_{3}=9.1","slider":{"hardMin":true,"min":"0","max":""}},{"type":"expression","id":"h4","color":"#6042a6","latex":"h_{4}=9.1","slider":{"hardMin":true,"min":"0"}},{"type":"expression","id":"h5","color":"#000000","latex":"h_{5}=10.1","slider":{"hardMin":true,"min":"0","max":""}},{"type":"expression","id":"h6","color":"#c74440","latex":"h_{6}=10.15","slider":{"hardMin":true,"min":"0"}},{"type":"expression","id":"p1","color":"#388c46","latex":"p_{1}=\\\\left(0,h_{1}\\\\right)","dragMode":"Y"},{"type":"expression","id":"p2","color":"#388c46","latex":"p_{2}=\\\\left(\\\\operatorname{total}\\\\left(d\\\\left[1...1\\\\right]\\\\right),h_{2}\\\\right)"},{"type":"expression","id":"p3","color":"#388c46","latex":"p_{3}=\\\\left(\\\\operatorname{total}\\\\left(d\\\\left[1...2\\\\right]\\\\right),h_{3}\\\\right)"},{"type":"expression","id":"p4","color":"#388c46","latex":"p_{4}=\\\\left(\\\\operatorname{total}\\\\left(d\\\\left[1...3\\\\right]\\\\right),h_{4}\\\\right)"},{"type":"expression","id":"p5","color":"#388c46","latex":"p_{5}=\\\\left(\\\\operatorname{total}\\\\left(d\\\\left[1...4\\\\right]\\\\right),h_{5}\\\\right)"},{"type":"expression","id":"p6","color":"#388c46","latex":"p_{6}=\\\\left(\\\\operatorname{total}\\\\left(d\\\\left[1...5\\\\right]\\\\right),h_{6}\\\\right)"},{"type":"expression","id":"p1Label","color":"#388c46","latex":"\\\\left(0,h_{1}\\\\right)","showLabel":true,"label":"${h_{1}}","dragMode":"NONE","clickableInfo":{"enabled":true,"latex":"e_{diting}\\\\to1"}},{"type":"expression","id":"p2Label","color":"#388c46","latex":"\\\\left(\\\\operatorname{total}\\\\left(d\\\\left[1...1\\\\right]\\\\right),h_{2}\\\\right)","showLabel":true,"label":"${h_{2}}","dragMode":"NONE","clickableInfo":{"enabled":true,"latex":"e_{diting}\\\\to2"}},{"type":"expression","id":"p3Label","color":"#388c46","latex":"\\\\left(\\\\operatorname{total}\\\\left(d\\\\left[1...2\\\\right]\\\\right),h_{3}\\\\right)","showLabel":true,"label":"${h_{3}}","dragMode":"NONE","clickableInfo":{"enabled":true,"latex":"e_{diting}\\\\to3"}},{"type":"expression","id":"p4Label","color":"#388c46","latex":"\\\\left(\\\\operatorname{total}\\\\left(d\\\\left[1...3\\\\right]\\\\right),h_{4}\\\\right)","showLabel":true,"label":"${h_{4}}","dragMode":"NONE","clickableInfo":{"enabled":true,"latex":"e_{diting}\\\\to4"}},{"type":"expression","id":"p5Label","color":"#388c46","latex":"\\\\left(\\\\operatorname{total}\\\\left(d\\\\left[1...4\\\\right]\\\\right),h_{5}\\\\right)","showLabel":true,"label":"${h_{5}}","dragMode":"NONE","clickableInfo":{"enabled":true,"latex":"e_{diting}\\\\to5"}},{"type":"expression","id":"p6Label","color":"#388c46","latex":"\\\\left(\\\\operatorname{total}\\\\left(d\\\\left[1...5\\\\right]\\\\right),h_{6}\\\\right)","showLabel":true,"label":"${h_{6}}","dragMode":"NONE","clickableInfo":{"enabled":true,"latex":"e_{diting}\\\\to6"}},{"type":"expression","id":"editing","color":"#c74440","latex":"e_{diting}=0"},{"type":"expression","id":"waterEditing","color":"#c74440","latex":"w_{aterEditing}=0"},{"type":"expression","id":"p0Label","color":"#c74440","showLabel":true}]},"includeFunctionParametersInRandomSeed":true,"doNotMigrateMovablePointStyle":true},			"KerbAndChannel": {"version":11,"randomSeed":"b9b1eac0e1ec660e40ad8c1a7ad79b83","graph":{"viewport":{"xmin":-2.584022824276828,"ymin":7.543484199388767,"xmax":9.651271293370229,"ymax":12.061131258212306},"showGrid":false,"showXAxis":false,"showYAxis":false,"squareAxes":false,"__v12ViewportLatexStash":{"xmin":"-2.584022824276828","xmax":"9.651271293370229","ymin":"7.543484199388767","ymax":"12.061131258212306"}},"expressions":{"list":[{"type":"expression","id":"ManningsCoefficient","color":"#2d70b3","latex":"N_{ManningsCoefficient}=0.01"},{"type":"expression","id":"LongitudinalGradient","color":"#388c46","latex":"L_{ongitudinalGradient}=0.01"},{"type":"expression","id":"WaterLevel","color":"#6042a6","latex":"w_{aterLevel}=10"},{"type":"expression","id":"d","color":"#000000","latex":"d=\\\\left[1,1,1,1,1\\\\right]"},{"type":"expression","id":"h","color":"#6042a6","latex":"h=\\\\left[h_{1},h_{2},h_{3},h_{4},h_{5}\\\\right]"},{"type":"expression","id":"p","color":"#c74440","latex":"p=\\\\left[p_{1},p_{2},p_{3},p_{4},p_{5}\\\\right]","hidden":true},{"type":"expression","id":"P","color":"#2d70b3","latex":"P=p\\\\left[2...5\\\\right]","hidden":true},{"type":"expression","id":"WaterLevelPoint","color":"#2d70b3","latex":"\\\\left(0,w_{aterLevel}\\\\right)"},{"type":"expression","id":"WaterLevelLabel","color":"#2d70b3","latex":"\\\\left(0,w_{aterLevel}\\\\right)","showLabel":true,"label":"${w_{aterLevel}}","dragMode":"NONE","labelOrientation":"right","clickableInfo":{"enabled":true,"latex":"w_{aterEditing}\\\\to1"}},{"type":"expression","id":"WaterLevelLine","color":"#2d70b3","latex":"y=w_{aterLevel}\\\\cdot\\\\left\\\\{i_{ntercepts}\\\\left[i\\\\right]\\\\le x\\\\le i_{ntercepts}\\\\left[i+1\\\\right]\\\\right\\\\}\\\\operatorname{for}i=\\\\left[1,3...\\\\operatorname{length}\\\\left(i_{ntercepts}\\\\right)\\\\right]"},{"type":"expression","id":"interceptsWithUndefined","color":"#388c46","latex":"i_{nterceptsWithUndefined}=\\\\operatorname{unique}\\\\left(\\\\operatorname{join}\\\\left(\\\\left[\\\\frac{w_{aterLevel}-c}{m}\\\\left[i\\\\right]\\\\cdot\\\\left\\\\{p.x\\\\left[i\\\\right]\\\\le\\\\frac{w_{aterLevel}-c}{m}\\\\left[i\\\\right]<P.x\\\\left[i\\\\right]\\\\right\\\\}\\\\operatorname{for}i=\\\\left[1...\\\\operatorname{length}\\\\left(\\\\frac{w_{aterLevel}-c}{m}\\\\right)\\\\right]\\\\right],\\\\left[\\\\frac{0}{0}\\\\right]\\\\right)\\\\right)"},{"type":"expression","id":"intercepts","color":"#6042a6","latex":"i_{ntercepts}=\\\\operatorname{sort}\\\\left(i_{nterceptsWithUndefined}\\\\right)\\\\left[1...\\\\operatorname{length}\\\\left(i_{nterceptsWithUndefined}\\\\right)-1\\\\right]"},{"type":"expression","id":"Line","color":"#000000","latex":"y=m\\\\cdot x+c\\\\cdot\\\\left\\\\{p.x\\\\le x<P.x\\\\right\\\\}"},{"type":"expression","id":"m","color":"#000000","latex":"m=\\\\frac{P.y-p.y}{P.x-p.x}"},{"type":"expression","id":"c","color":"#c74440","latex":"c=-m\\\\cdot p.x+p.y"},{"type":"expression","id":"pPlusInts","color":"#2d70b3","latex":"p_{plusInts}=\\\\operatorname{join}\\\\left(p,\\\\left(i_{ntercepts},w_{aterLevel}\\\\right)\\\\right)\\\\left[\\\\operatorname{sort}\\\\left(\\\\left[1...\\\\operatorname{length}\\\\left(\\\\operatorname{join}\\\\left(p,\\\\left(i_{ntercepts},w_{aterLevel}\\\\right)\\\\right)\\\\right)\\\\right],\\\\operatorname{join}\\\\left(p,\\\\left(i_{ntercepts},w_{aterLevel}\\\\right)\\\\right).x\\\\right)\\\\right]","hidden":true},{"type":"expression","id":"PPlusInts","color":"#388c46","latex":"P_{plusInts}=p_{plusInts}\\\\left[2...\\\\operatorname{length}\\\\left(p_{plusInts}\\\\right)\\\\right]","hidden":true},{"type":"expression","id":"belowWater","color":"#6042a6","latex":"b_{elowWater}=p_{plusInts}\\\\cdot\\\\left\\\\{p_{plusInts}.y\\\\le w_{aterLevel}\\\\right\\\\}","hidden":true},{"type":"expression","id":"BelowWater","color":"#000000","latex":"B_{elowWater}=P_{plusInts}\\\\cdot\\\\left\\\\{P_{plusInts}.y\\\\le w_{aterLevel}\\\\right\\\\}","hidden":true},{"type":"expression","id":"lengths","color":"#c74440","latex":"l_{engths}=\\\\sqrt{\\\\left(B_{elowWater}-b_{elowWater}\\\\right).x^{2}+\\\\left(B_{elowWater}-b_{elowWater}\\\\right).y^{2}}"},{"type":"expression","id":"Areas","color":"#2d70b3","latex":"A_{reas}=\\\\left(\\\\frac{p_{plusInts}.y+P_{plusInts}.y}{2}-w_{aterLevel}\\\\right)\\\\cdot\\\\left(P_{plusInts}.x-p_{plusInts}.x\\\\right)"},{"type":"expression","id":"WettedPerimeter","color":"#388c46","latex":"W_{ettedPerimeter}=\\\\operatorname{total}\\\\left(\\\\left\\\\{l_{engths}>0:l_{engths},0\\\\right\\\\}\\\\right)"},{"type":"expression","id":"WettedArea","color":"#6042a6","latex":"W_{ettedArea}=\\\\operatorname{total}\\\\left(\\\\left\\\\{A_{reas}<0:-A_{reas},0\\\\right\\\\}\\\\right)"},{"type":"expression","id":"HydraulicRadius","color":"#000000","latex":"H_{ydraulicRadius}=\\\\frac{W_{ettedArea}}{W_{ettedPerimeter}}"},{"type":"expression","id":"Flowrate","color":"#c74440","latex":"f_{lowrate}=\\\\frac{W_{ettedArea}\\\\cdot\\\\sqrt[3]{H_{ydraulicRadius}^{2}}\\\\cdot\\\\sqrt{L_{ongitudinalGradient}}}{N_{ManningsCoefficient}}"},{"type":"expression","id":"Velocity","color":"#2d70b3","latex":"v_{elocity}=\\\\frac{f_{lowrate}}{W_{ettedArea}}"},{"type":"expression","id":"Depth","color":"#388c46","latex":"d_{epth}=w_{aterLevel}-\\\\min\\\\left(p.y\\\\right)"},{"type":"expression","id":"MinY","color":"#6042a6","latex":"m_{inY}=\\\\min\\\\left(p.y\\\\right)"},{"type":"expression","id":"MaxY","color":"#000000","latex":"m_{axY}=\\\\max\\\\left(p.y\\\\right)"},{"type":"expression","id":"h1","color":"#c74440","latex":"h_{1}=10.2","slider":{"hardMin":true,"min":"0"}},{"type":"expression","id":"h2","color":"#2d70b3","latex":"h_{2}=10.05","slider":{"hardMin":true,"min":"0"}},{"type":"expression","id":"h3","color":"#388c46","latex":"h_{3}=9.9","slider":{"hardMin":true,"min":"0","max":""}},{"type":"expression","id":"h4","color":"#6042a6","latex":"h_{4}=9.95","slider":{"hardMin":true,"min":"0"}},{"type":"expression","id":"h5","color":"#000000","latex":"h_{5}=10.02","slider":{"hardMin":true,"min":"0"}},{"type":"expression","id":"p1","color":"#388c46","latex":"p_{1}=\\\\left(0,h_{1}\\\\right)","dragMode":"Y"},{"type":"expression","id":"p2","color":"#388c46","latex":"p_{2}=\\\\left(\\\\operatorname{total}\\\\left(d\\\\left[1...1\\\\right]\\\\right),h_{2}\\\\right)"},{"type":"expression","id":"p3","color":"#388c46","latex":"p_{3}=\\\\left(\\\\operatorname{total}\\\\left(d\\\\left[1...2\\\\right]\\\\right),h_{3}\\\\right)"},{"type":"expression","id":"p4","color":"#388c46","latex":"p_{4}=\\\\left(\\\\operatorname{total}\\\\left(d\\\\left[1...3\\\\right]\\\\right),h_{4}\\\\right)"},{"type":"expression","id":"p5","color":"#388c46","latex":"p_{5}=\\\\left(\\\\operatorname{total}\\\\left(d\\\\left[1...4\\\\right]\\\\right),h_{5}\\\\right)"},{"type":"expression","id":"p1Label","color":"#388c46","latex":"\\\\left(0,h_{1}\\\\right)","showLabel":true,"label":"${h_{1}}","dragMode":"NONE","clickableInfo":{"enabled":true,"latex":"e_{diting}\\\\to1"}},{"type":"expression","id":"p2Label","color":"#388c46","latex":"\\\\left(\\\\operatorname{total}\\\\left(d\\\\left[1...1\\\\right]\\\\right),h_{2}\\\\right)","showLabel":true,"label":"${h_{2}}","dragMode":"NONE","clickableInfo":{"enabled":true,"latex":"e_{diting}\\\\to2"}},{"type":"expression","id":"p3Label","color":"#388c46","latex":"\\\\left(\\\\operatorname{total}\\\\left(d\\\\left[1...2\\\\right]\\\\right),h_{3}\\\\right)","showLabel":true,"label":"${h_{3}}","dragMode":"NONE","clickableInfo":{"enabled":true,"latex":"e_{diting}\\\\to3"}},{"type":"expression","id":"p4Label","color":"#388c46","latex":"\\\\left(\\\\operatorname{total}\\\\left(d\\\\left[1...3\\\\right]\\\\right),h_{4}\\\\right)","showLabel":true,"label":"${h_{4}}","dragMode":"NONE","clickableInfo":{"enabled":true,"latex":"e_{diting}\\\\to4"}},{"type":"expression","id":"p5Label","color":"#388c46","latex":"\\\\left(\\\\operatorname{total}\\\\left(d\\\\left[1...4\\\\right]\\\\right),h_{5}\\\\right)","showLabel":true,"label":"${h_{5}}","dragMode":"NONE","clickableInfo":{"enabled":true,"latex":"e_{diting}\\\\to5"}},{"type":"expression","id":"editing","color":"#c74440","latex":"e_{diting}=0"},{"type":"expression","id":"waterEditing","color":"#c74440","latex":"w_{aterEditing}=0"},{"type":"expression","id":"p0Label","color":"#c74440","showLabel":true}]},"includeFunctionParametersInRandomSeed":true,"doNotMigrateMovablePointStyle":true},			"Roadway": {"version":11,"randomSeed":"b9b1eac0e1ec660e40ad8c1a7ad79b83","graph":{"viewport":{"xmin":-0.5,"ymin":9.700000000000001,"xmax":12.5,"ymax":10.25},"showGrid":false,"showXAxis":false,"showYAxis":false,"squareAxes":false,"__v12ViewportLatexStash":{"xmin":"-0.5","xmax":"12.5","ymin":"9.700000000000001","ymax":"10.25"}},"expressions":{"list":[{"type":"expression","id":"ManningsCoefficient","color":"#2d70b3","latex":"N_{ManningsCoefficient}=0.01"},{"type":"expression","id":"LongitudinalGradient","color":"#388c46","latex":"L_{ongitudinalGradient}=0.01"},{"type":"expression","id":"WaterLevel","color":"#6042a6","latex":"w_{aterLevel}=10"},{"type":"expression","id":"d","color":"#000000","latex":"d=\\\\left[1,1,1,1,1,1,1,1,1,1,1,1\\\\right]"},{"type":"expression","id":"h","color":"#6042a6","latex":"h=\\\\left[h_{1},h_{2},h_{3},h_{4},h_{5},h_{6},h_{7},h_{8},h_{9},h_{10},h_{11},h_{12},h_{13}\\\\right]"},{"type":"expression","id":"p","color":"#c74440","latex":"p=\\\\left[p_{1},p_{2},p_{3},p_{4},p_{5},p_{6},p_{7},p_{8},p_{9},p_{10},p_{11},p_{12},p_{13}\\\\right]"},{"type":"expression","id":"P","color":"#2d70b3","latex":"P=p\\\\left[2...13\\\\right]"},{"type":"expression","id":"WaterLevelPoint","color":"#2d70b3","latex":"\\\\left(0,w_{aterLevel}\\\\right)"},{"type":"expression","id":"WaterLevelLabel","color":"#2d70b3","latex":"\\\\left(0,w_{aterLevel}\\\\right)","showLabel":true,"label":"${w_{aterLevel}}","dragMode":"NONE","labelOrientation":"right","clickableInfo":{"enabled":true,"latex":"w_{aterEditing}\\\\to1"}},{"type":"expression","id":"WaterLevelLine","color":"#2d70b3","latex":"y=w_{aterLevel}\\\\cdot\\\\left\\\\{i_{ntercepts}\\\\left[i\\\\right]\\\\le x\\\\le i_{ntercepts}\\\\left[i+1\\\\right]\\\\right\\\\}\\\\operatorname{for}i=\\\\left[1,3...\\\\operatorname{length}\\\\left(i_{ntercepts}\\\\right)\\\\right]"},{"type":"expression","id":"interceptsWithUndefined","color":"#388c46","latex":"i_{nterceptsWithUndefined}=\\\\operatorname{unique}\\\\left(\\\\operatorname{join}\\\\left(\\\\left[\\\\frac{w_{aterLevel}-c}{m}\\\\left[i\\\\right]\\\\cdot\\\\left\\\\{p.x\\\\left[i\\\\right]\\\\le\\\\frac{w_{aterLevel}-c}{m}\\\\left[i\\\\right]<P.x\\\\left[i\\\\right]\\\\right\\\\}\\\\operatorname{for}i=\\\\left[1...\\\\operatorname{length}\\\\left(\\\\frac{w_{aterLevel}-c}{m}\\\\right)\\\\right]\\\\right],\\\\left[\\\\frac{0}{0}\\\\right]\\\\right)\\\\right)"},{"type":"expression","id":"intercepts","color":"#6042a6","latex":"i_{ntercepts}=\\\\operatorname{sort}\\\\left(i_{nterceptsWithUndefined}\\\\right)\\\\left[1...\\\\operatorname{length}\\\\left(i_{nterceptsWithUndefined}\\\\right)-1\\\\right]"},{"type":"expression","id":"Line","color":"#000000","latex":"y=m\\\\cdot x+c\\\\cdot\\\\left\\\\{p.x\\\\le x<P.x\\\\right\\\\}"},{"type":"expression","id":"m","color":"#000000","latex":"m=\\\\frac{P.y-p.y}{P.x-p.x}"},{"type":"expression","id":"c","color":"#c74440","latex":"c=-m\\\\cdot p.x+p.y"},{"type":"expression","id":"pPlusInts","color":"#2d70b3","latex":"p_{plusInts}=\\\\operatorname{join}\\\\left(p,\\\\left(i_{ntercepts},w_{aterLevel}\\\\right)\\\\right)\\\\left[\\\\operatorname{sort}\\\\left(\\\\left[1...\\\\operatorname{length}\\\\left(\\\\operatorname{join}\\\\left(p,\\\\left(i_{ntercepts},w_{aterLevel}\\\\right)\\\\right)\\\\right)\\\\right],\\\\operatorname{join}\\\\left(p,\\\\left(i_{ntercepts},w_{aterLevel}\\\\right)\\\\right).x\\\\right)\\\\right]","hidden":true},{"type":"expression","id":"PPlusInts","color":"#388c46","latex":"P_{plusInts}=p_{plusInts}\\\\left[2...\\\\operatorname{length}\\\\left(p_{plusInts}\\\\right)\\\\right]","hidden":true},{"type":"expression","id":"belowWater","color":"#6042a6","latex":"b_{elowWater}=p_{plusInts}\\\\cdot\\\\left\\\\{p_{plusInts}.y\\\\le w_{aterLevel}\\\\right\\\\}","hidden":true},{"type":"expression","id":"BelowWater","color":"#000000","latex":"B_{elowWater}=P_{plusInts}\\\\cdot\\\\left\\\\{P_{plusInts}.y\\\\le w_{aterLevel}\\\\right\\\\}","hidden":true},{"type":"expression","id":"lengths","color":"#c74440","latex":"l_{engths}=\\\\sqrt{\\\\left(B_{elowWater}-b_{elowWater}\\\\right).x^{2}+\\\\left(B_{elowWater}-b_{elowWater}\\\\right).y^{2}}"},{"type":"expression","id":"Areas","color":"#2d70b3","latex":"A_{reas}=\\\\left(\\\\frac{p_{plusInts}.y+P_{plusInts}.y}{2}-w_{aterLevel}\\\\right)\\\\cdot\\\\left(P_{plusInts}.x-p_{plusInts}.x\\\\right)"},{"type":"expression","id":"WettedPerimeter","color":"#388c46","latex":"W_{ettedPerimeter}=\\\\operatorname{total}\\\\left(\\\\left\\\\{l_{engths}>0:l_{engths},0\\\\right\\\\}\\\\right)"},{"type":"expression","id":"WettedArea","color":"#6042a6","latex":"W_{ettedArea}=\\\\operatorname{total}\\\\left(\\\\left\\\\{A_{reas}<0:-A_{reas},0\\\\right\\\\}\\\\right)"},{"type":"expression","id":"HydraulicRadius","color":"#000000","latex":"H_{ydraulicRadius}=\\\\frac{W_{ettedArea}}{W_{ettedPerimeter}}"},{"type":"expression","id":"Flowrate","color":"#c74440","latex":"f_{lowrate}=\\\\frac{W_{ettedArea}\\\\cdot\\\\sqrt[3]{H_{ydraulicRadius}^{2}}\\\\cdot\\\\sqrt{L_{ongitudinalGradient}}}{N_{ManningsCoefficient}}"},{"type":"expression","id":"Velocity","color":"#2d70b3","latex":"v_{elocity}=\\\\frac{f_{lowrate}}{W_{ettedArea}}"},{"type":"expression","id":"Depth","color":"#388c46","latex":"d_{epth}=w_{aterLevel}-\\\\min\\\\left(p.y\\\\right)"},{"type":"expression","id":"MinY","color":"#6042a6","latex":"m_{inY}=\\\\min\\\\left(p.y\\\\right)"},{"type":"expression","id":"MaxY","color":"#000000","latex":"m_{axY}=\\\\max\\\\left(p.y\\\\right)"},{"type":"expression","id":"h1","color":"#c74440","latex":"h_{1}=10.15","slider":{"hardMin":true,"min":"0","max":""}},{"type":"expression","id":"h2","color":"#2d70b3","latex":"h_{2}=10.1","slider":{"hardMin":true,"min":"0","max":""}},{"type":"expression","id":"h3","color":"#388c46","latex":"h_{3}=9.95","slider":{"hardMin":true,"min":"0","max":""}},{"type":"expression","id":"h4","color":"#6042a6","latex":"h_{4}=9.8","slider":{"hardMin":true,"min":"0","max":""}},{"type":"expression","id":"h5","color":"#000000","latex":"h_{5}=9.85","slider":{"hardMin":true,"min":"0","max":""}},{"type":"expression","id":"h6","color":"#c74440","latex":"h_{6}=9.92","slider":{"hardMin":true,"min":"0","max":""}},{"type":"expression","id":"h7","color":"#2d70b3","latex":"h_{7}=9.97","slider":{"hardMin":true,"min":"0","max":""}},{"type":"expression","id":"h8","color":"#388c46","latex":"h_{8}=9.92","slider":{"hardMin":true,"min":"0","max":""}},{"type":"expression","id":"h9","color":"#6042a6","latex":"h_{9}=9.85","slider":{"hardMin":true,"min":"0","max":""}},{"type":"expression","id":"h10","color":"#000000","latex":"h_{10}=9.8","slider":{"hardMin":true,"min":"0","max":""}},{"type":"expression","id":"h11","color":"#c74440","latex":"h_{11}=9.95","slider":{"hardMin":true,"min":"0","max":""}},{"type":"expression","id":"h12","color":"#2d70b3","latex":"h_{12}=10.1","slider":{"hardMin":true,"min":"0","max":""}},{"type":"expression","id":"h13","color":"#388c46","latex":"h_{13}=10.15","slider":{"hardMin":true,"min":"0","max":""}},{"type":"expression","id":"p1","color":"#388c46","latex":"p_{1}=\\\\left(0,h_{1}\\\\right)","dragMode":"Y"},{"type":"expression","id":"p2","color":"#388c46","latex":"p_{2}=\\\\left(\\\\operatorname{total}\\\\left(d\\\\left[1...1\\\\right]\\\\right),h_{2}\\\\right)"},{"type":"expression","id":"p3","color":"#388c46","latex":"p_{3}=\\\\left(\\\\operatorname{total}\\\\left(d\\\\left[1...2\\\\right]\\\\right),h_{3}\\\\right)"},{"type":"expression","id":"p4","color":"#388c46","latex":"p_{4}=\\\\left(\\\\operatorname{total}\\\\left(d\\\\left[1...3\\\\right]\\\\right),h_{4}\\\\right)"},{"type":"expression","id":"p5","color":"#388c46","latex":"p_{5}=\\\\left(\\\\operatorname{total}\\\\left(d\\\\left[1...4\\\\right]\\\\right),h_{5}\\\\right)"},{"type":"expression","id":"p6","color":"#388c46","latex":"p_{6}=\\\\left(\\\\operatorname{total}\\\\left(d\\\\left[1...5\\\\right]\\\\right),h_{6}\\\\right)"},{"type":"expression","id":"p7","color":"#388c46","latex":"p_{7}=\\\\left(\\\\operatorname{total}\\\\left(d\\\\left[1...6\\\\right]\\\\right),h_{7}\\\\right)"},{"type":"expression","id":"p8","color":"#388c46","latex":"p_{8}=\\\\left(\\\\operatorname{total}\\\\left(d\\\\left[1...7\\\\right]\\\\right),h_{8}\\\\right)"},{"type":"expression","id":"p9","color":"#388c46","latex":"p_{9}=\\\\left(\\\\operatorname{total}\\\\left(d\\\\left[1...8\\\\right]\\\\right),h_{9}\\\\right)"},{"type":"expression","id":"p10","color":"#388c46","latex":"p_{10}=\\\\left(\\\\operatorname{total}\\\\left(d\\\\left[1...9\\\\right]\\\\right),h_{10}\\\\right)"},{"type":"expression","id":"p11","color":"#388c46","latex":"p_{11}=\\\\left(\\\\operatorname{total}\\\\left(d\\\\left[1...10\\\\right]\\\\right),h_{11}\\\\right)"},{"type":"expression","id":"p12","color":"#388c46","latex":"p_{12}=\\\\left(\\\\operatorname{total}\\\\left(d\\\\left[1...11\\\\right]\\\\right),h_{12}\\\\right)"},{"type":"expression","id":"p13","color":"#388c46","latex":"p_{13}=\\\\left(\\\\operatorname{total}\\\\left(d\\\\left[1...12\\\\right]\\\\right),h_{13}\\\\right)"},{"type":"expression","id":"p1Label","color":"#388c46","latex":"\\\\left(0,h_{1}\\\\right)","showLabel":true,"label":"${h_{1}}","dragMode":"NONE","clickableInfo":{"enabled":true,"latex":"e_{diting}\\\\to1"}},{"type":"expression","id":"p2Label","color":"#388c46","latex":"\\\\left(\\\\operatorname{total}\\\\left(d\\\\left[1...1\\\\right]\\\\right),h_{2}\\\\right)","showLabel":true,"label":"${h_{2}}","dragMode":"NONE","clickableInfo":{"enabled":true,"latex":"e_{diting}\\\\to2"}},{"type":"expression","id":"p3Label","color":"#388c46","latex":"\\\\left(\\\\operatorname{total}\\\\left(d\\\\left[1...2\\\\right]\\\\right),h_{3}\\\\right)","showLabel":true,"label":"${h_{3}}","dragMode":"NONE","clickableInfo":{"enabled":true,"latex":"e_{diting}\\\\to3"}},{"type":"expression","id":"p4Label","color":"#388c46","latex":"\\\\left(\\\\operatorname{total}\\\\left(d\\\\left[1...3\\\\right]\\\\right),h_{4}\\\\right)","showLabel":true,"label":"${h_{4}}","dragMode":"NONE","clickableInfo":{"enabled":true,"latex":"e_{diting}\\\\to4"}},{"type":"expression","id":"p5Label","color":"#388c46","latex":"\\\\left(\\\\operatorname{total}\\\\left(d\\\\left[1...4\\\\right]\\\\right),h_{5}\\\\right)","showLabel":true,"label":"${h_{5}}","dragMode":"NONE","clickableInfo":{"enabled":true,"latex":"e_{diting}\\\\to5"}},{"type":"expression","id":"p6Label","color":"#388c46","latex":"\\\\left(\\\\operatorname{total}\\\\left(d\\\\left[1...5\\\\right]\\\\right),h_{6}\\\\right)","showLabel":true,"label":"${h_{6}}","dragMode":"NONE","clickableInfo":{"enabled":true,"latex":"e_{diting}\\\\to6"}},{"type":"expression","id":"p7Label","color":"#388c46","latex":"\\\\left(\\\\operatorname{total}\\\\left(d\\\\left[1...6\\\\right]\\\\right),h_{7}\\\\right)","showLabel":true,"label":"${h_{7}}","dragMode":"NONE","clickableInfo":{"enabled":true,"latex":"e_{diting}\\\\to7"}},{"type":"expression","id":"p8Label","color":"#388c46","latex":"\\\\left(\\\\operatorname{total}\\\\left(d\\\\left[1...7\\\\right]\\\\right),h_{8}\\\\right)","showLabel":true,"label":"${h_{8}}","dragMode":"NONE","clickableInfo":{"enabled":true,"latex":"e_{diting}\\\\to8"}},{"type":"expression","id":"p9Label","color":"#388c46","latex":"\\\\left(\\\\operatorname{total}\\\\left(d\\\\left[1...8\\\\right]\\\\right),h_{9}\\\\right)","showLabel":true,"label":"${h_{9}}","dragMode":"NONE","clickableInfo":{"enabled":true,"latex":"e_{diting}\\\\to9"}},{"type":"expression","id":"p10Label","color":"#388c46","latex":"\\\\left(\\\\operatorname{total}\\\\left(d\\\\left[1...9\\\\right]\\\\right),h_{10}\\\\right)","showLabel":true,"label":"${h_{10}}","dragMode":"NONE","clickableInfo":{"enabled":true,"latex":"e_{diting}\\\\to10"}},{"type":"expression","id":"p11Label","color":"#388c46","latex":"\\\\left(\\\\operatorname{total}\\\\left(d\\\\left[1...10\\\\right]\\\\right),h_{11}\\\\right)","showLabel":true,"label":"${h_{11}}","dragMode":"NONE","clickableInfo":{"enabled":true,"latex":"e_{diting}\\\\to11"}},{"type":"expression","id":"p12Label","color":"#388c46","latex":"\\\\left(\\\\operatorname{total}\\\\left(d\\\\left[1...11\\\\right]\\\\right),h_{12}\\\\right)","showLabel":true,"label":"${h_{12}}","dragMode":"NONE","clickableInfo":{"enabled":true,"latex":"e_{diting}\\\\to12"}},{"type":"expression","id":"p13Label","color":"#388c46","latex":"\\\\left(\\\\operatorname{total}\\\\left(d\\\\left[1...12\\\\right]\\\\right),h_{13}\\\\right)","showLabel":true,"label":"${h_{13}}","dragMode":"NONE","clickableInfo":{"enabled":true,"latex":"e_{diting}\\\\to13"}},{"type":"expression","id":"editing","color":"#c74440","latex":"e_{diting}=0"},{"type":"expression","id":"waterEditing","color":"#c74440","latex":"w_{aterEditing}=0"}]},"includeFunctionParametersInRandomSeed":true,"doNotMigrateMovablePointStyle":true}		},		"Distances": {			"Composite": {"version": 11,"randomSeed": "648a7506c06876ffdce20daeae0a5617","graph": {"viewport": {"xmin": -0.5,"ymin": -1,"xmax": 16.5,"ymax": 1},"showGrid": false,"showXAxis": false,"showYAxis": false,"squareAxes": false,"__v12ViewportLatexStash": {"xmin": "-0.5","xmax": "16.5","ymin": "-1","ymax": "1"}},"expressions": {"list": [{"type": "expression","id": "baseLine","color": "#000000","latex": "y=0\\\\left\\\\{0\\\\le x\\\\le\\\\operatorname{total}\\\\left(d\\\\right)\\\\right\\\\}","lineWidth": "1"},{"type": "expression","id": "HeightOfLabels","color": "#2d70b3","latex": "h_{eightOfLabels}=-0.4"},{"type": "expression","id": "d","color": "#388c46","latex": "d=\\\\left[d_{1},d_{2},d_{3},d_{4},d_{5},d_{6},d_{7},d_{8},d_{9},d_{10}\\\\right]"},{"type": "expression","id": "total","color": "#6042a6","latex": "t_{otal}=\\\\operatorname{total}\\\\left(d\\\\right)"},{"type": "expression","id": "d1","color": "#000000","latex": "d_{1}=2","slider": {"hardMin": true,"min": "0","max": ""}},{"type": "expression","id": "d2","color": "#c74440","latex": "d_{2}=1","slider": {"hardMin": true,"min": "0","max": ""}},{"type": "expression","id": "d3","color": "#2d70b3","latex": "d_{3}=2","slider": {"hardMin": true,"min": "0","max": ""}},{"type": "expression","id": "d4","color": "#388c46","latex": "d_{4}=1","slider": {"hardMin": true,"min": "0","max": ""}},{"type": "expression","id": "d5","color": "#6042a6","latex": "d_{5}=2","slider": {"hardMin": true,"min": "0","max": ""}},{"type": "expression","id": "d6","color": "#000000","latex": "d_{6}=2","slider": {"hardMin": true,"min": "0","max": ""}},{"type": "expression","id": "d7","color": "#c74440","latex": "d_{7}=1","slider": {"hardMin": true,"min": "0","max": ""}},{"type": "expression","id": "d8","color": "#2d70b3","latex": "d_{8}=2","slider": {"hardMin": true,"min": "0","max": ""}},{"type": "expression","id": "d9","color": "#388c46","latex": "d_{9}=1","slider": {"hardMin": true,"min": "0","max": ""}},{"type": "expression","id": "d10","color": "#6042a6","latex": "d_{10}=2","slider": {"hardMin": true,"min": "0","max": ""}},{"type": "expression","id": "d1Point","color": "#c74440","latex": "\\\\left(d_{1},0\\\\right)"},{"type": "expression","id": "d2Point","color": "#c74440","latex": "\\\\left(d_{1}+d_{2},0\\\\right)"},{"type": "expression","id": "d3Point","color": "#c74440","latex": "\\\\left(d_{1}+d_{2}+d_{3},0\\\\right)"},{"type": "expression","id": "d4Point","color": "#c74440","latex": "\\\\left(d_{1}+d_{2}+d_{3}+d_{4},0\\\\right)"},{"type": "expression","id": "d5Point","color": "#c74440","latex": "\\\\left(d_{1}+d_{2}+d_{3}+d_{4}+d_{5},0\\\\right)"},{"type": "expression","id": "d6Point","color": "#c74440","latex": "\\\\left(d_{1}+d_{2}+d_{3}+d_{4}+d_{5}+d_{6},0\\\\right)"},{"type": "expression","id": "d7Point","color": "#c74440","latex": "\\\\left(d_{1}+d_{2}+d_{3}+d_{4}+d_{5}+d_{6}+d_{7},0\\\\right)"},{"type": "expression","id": "d8Point","color": "#c74440","latex": "\\\\left(d_{1}+d_{2}+d_{3}+d_{4}+d_{5}+d_{6}+d_{7}+d_{8},0\\\\right)"},{"type": "expression","id": "d9Point","color": "#c74440","latex": "\\\\left(d_{1}+d_{2}+d_{3}+d_{4}+d_{5}+d_{6}+d_{7}+d_{8}+d_{9},0\\\\right)"},{"type": "expression","id": "d10Point","color": "#c74440","latex": "\\\\left(d_{1}+d_{2}+d_{3}+d_{4}+d_{5}+d_{6}+d_{7}+d_{8}+d_{9}+d_{10},0\\\\right)"},{"type": "expression","id": "d1Label","color": "#c74440","latex": "\\\\left(\\\\frac{d_{1}}{2},h_{eightOfLabels}\\\\right)","showLabel": true,"label": "${d_{1}}","hidden": true,"dragMode": "NONE","clickableInfo": {"enabled": true,"latex": "e_{diting}\\\\to1"}},{"type": "expression","id": "d2Label","color": "#c74440","latex": "\\\\left(\\\\operatorname{total}\\\\left(d\\\\left[1...1\\\\right]\\\\right)+\\\\frac{d_{2}}{2},h_{eightOfLabels}\\\\right)","showLabel": true,"label": "${d_{2}}","hidden": true,"dragMode": "NONE","clickableInfo": {"enabled": true,"latex": "e_{diting}\\\\to2"}},{"type": "expression","id": "d3Label","color": "#c74440","latex": "\\\\left(\\\\operatorname{total}\\\\left(d\\\\left[1...2\\\\right]\\\\right)+\\\\frac{d_{3}}{2},h_{eightOfLabels}\\\\right)","showLabel": true,"label": "${d_{3}}","hidden": true,"dragMode": "NONE","clickableInfo": {"enabled": true,"latex": "e_{diting}\\\\to3"}},{"type": "expression","id": "d4Label","color": "#c74440","latex": "\\\\left(\\\\operatorname{total}\\\\left(d\\\\left[1...3\\\\right]\\\\right)+\\\\frac{d_{4}}{2},h_{eightOfLabels}\\\\right)","showLabel": true,"label": "${d_{4}}","hidden": true,"dragMode": "NONE","clickableInfo": {"enabled": true,"latex": "e_{diting}\\\\to4"}},{"type": "expression","id": "d5Label","color": "#c74440","latex": "\\\\left(\\\\operatorname{total}\\\\left(d\\\\left[1...4\\\\right]\\\\right)+\\\\frac{d_{5}}{2},h_{eightOfLabels}\\\\right)","showLabel": true,"label": "${d_{5}}","hidden": true,"dragMode": "NONE","clickableInfo": {"enabled": true,"latex": "e_{diting}\\\\to5"}},{"type": "expression","id": "d6Label","color": "#c74440","latex": "\\\\left(\\\\operatorname{total}\\\\left(d\\\\left[1...5\\\\right]\\\\right)+\\\\frac{d_{6}}{2},h_{eightOfLabels}\\\\right)","showLabel": true,"label": "${d_{6}}","hidden": true,"dragMode": "NONE","clickableInfo": {"enabled": true,"latex": "e_{diting}\\\\to6"}},{"type": "expression","id": "d7Label","color": "#c74440","latex": "\\\\left(\\\\operatorname{total}\\\\left(d\\\\left[1...6\\\\right]\\\\right)+\\\\frac{d_{7}}{2},h_{eightOfLabels}\\\\right)","showLabel": true,"label": "${d_{7}}","hidden": true,"dragMode": "NONE","clickableInfo": {"enabled": true,"latex": "e_{diting}\\\\to7"}},{"type": "expression","id": "d8Label","color": "#c74440","latex": "\\\\left(\\\\operatorname{total}\\\\left(d\\\\left[1...7\\\\right]\\\\right)+\\\\frac{d_{8}}{2},h_{eightOfLabels}\\\\right)","showLabel": true,"label": "${d_{8}}","hidden": true,"dragMode": "NONE","clickableInfo": {"enabled": true,"latex": "e_{diting}\\\\to8"}},{"type": "expression","id": "d9Label","color": "#c74440","latex": "\\\\left(\\\\operatorname{total}\\\\left(d\\\\left[1...8\\\\right]\\\\right)+\\\\frac{d_{9}}{2},h_{eightOfLabels}\\\\right)","showLabel": true,"label": "${d_{9}}","hidden": true,"dragMode": "NONE","clickableInfo": {"enabled": true,"latex": "e_{diting}\\\\to9"}},{"type": "expression","id": "d10Label","color": "#c74440","latex": "\\\\left(\\\\operatorname{total}\\\\left(d\\\\left[1...9\\\\right]\\\\right)+\\\\frac{d_{10}}{2},h_{eightOfLabels}\\\\right)","showLabel": true,"label": "${d_{10}}","hidden": true,"dragMode": "NONE","clickableInfo": {"enabled": true,"latex": "e_{diting}\\\\to10"}},{"type": "expression","id": "editing","color": "#c74440","latex": "e_{diting}=0"},{"type": "expression","id": "d0Label","color": "#c74440","showLabel": true}]},"includeFunctionParametersInRandomSeed": true,"doNotMigrateMovablePointStyle": true},			"Swale": {"version": 11,"randomSeed": "648a7506c06876ffdce20daeae0a5617","graph": {"viewport": {"xmin": -0.5,"ymin": -1,"xmax": 6.5,"ymax": 1},"showGrid": false,"showXAxis": false,"showYAxis": false,"squareAxes": false,"__v12ViewportLatexStash": {"xmin": "-0.5","xmax": "6.5","ymin": "-1","ymax": "1"}},"expressions": {"list": [{"type": "expression","id": "baseLine","color": "#000000","latex": "y=0\\\\left\\\\{0\\\\le x\\\\le\\\\operatorname{total}\\\\left(d\\\\right)\\\\right\\\\}","lineWidth": "1"},{"type": "expression","id": "HeightOfLabels","color": "#2d70b3","latex": "h_{eightOfLabels}=-0.4"},{"type": "expression","id": "d","color": "#388c46","latex": "d=\\\\left[d_{1},d_{2},d_{3},d_{4},d_{5},d_{6}\\\\right]"},{"type": "expression","id": "total","color": "#6042a6","latex": "t_{otal}=\\\\operatorname{total}\\\\left(d\\\\right)"},{"type": "expression","id": "d1","color": "#000000","latex": "d_{1}=1","slider": {"hardMin": true,"min": "0","max": ""}},{"type": "expression","id": "d2","color": "#c74440","latex": "d_{2}=1","slider": {"hardMin": true,"min": "0","max": ""}},{"type": "expression","id": "d3","color": "#2d70b3","latex": "d_{3}=1","slider": {"hardMin": true,"min": "0"}},{"type": "expression","id": "d4","color": "#388c46","latex": "d_{4}=1","slider": {"hardMin": true,"min": "0","max": ""}},{"type": "expression","id": "d5","color": "#6042a6","latex": "d_{5}=1","slider": {"hardMin": true,"min": "0","max": ""}},{"type": "expression","id": "d6","color": "#000000","latex": "d_{6}=1","slider": {"hardMin": true,"min": "0","max": ""}},{"type": "expression","id": "d1Point","color": "#c74440","latex": "\\\\left(d_{1},0\\\\right)"},{"type": "expression","id": "d2Point","color": "#c74440","latex": "\\\\left(d_{1}+d_{2},0\\\\right)"},{"type": "expression","id": "d3Point","color": "#c74440","latex": "\\\\left(d_{1}+d_{2}+d_{3},0\\\\right)"},{"type": "expression","id": "d4Point","color": "#c74440","latex": "\\\\left(d_{1}+d_{2}+d_{3}+d_{4},0\\\\right)"},{"type": "expression","id": "d5Point","color": "#c74440","latex": "\\\\left(d_{1}+d_{2}+d_{3}+d_{4}+d_{5},0\\\\right)"},{"type": "expression","id": "d6Point","color": "#c74440","latex": "\\\\left(d_{1}+d_{2}+d_{3}+d_{4}+d_{5}+d_{6},0\\\\right)"},{"type": "expression","id": "d1Label","color": "#c74440","latex": "\\\\left(\\\\frac{d_{1}}{2},h_{eightOfLabels}\\\\right)","showLabel": true,"label": "${d_{1}}","hidden": true,"dragMode": "NONE","clickableInfo": {"enabled": true,"latex": "e_{diting}\\\\to1"}},{"type": "expression","id": "d2Label","color": "#c74440","latex": "\\\\left(\\\\operatorname{total}\\\\left(d\\\\left[1...1\\\\right]\\\\right)+\\\\frac{d_{2}}{2},h_{eightOfLabels}\\\\right)","showLabel": true,"label": "${d_{2}}","hidden": true,"dragMode": "NONE","clickableInfo": {"enabled": true,"latex": "e_{diting}\\\\to2"}},{"type": "expression","id": "d3Label","color": "#c74440","latex": "\\\\left(\\\\operatorname{total}\\\\left(d\\\\left[1...2\\\\right]\\\\right)+\\\\frac{d_{3}}{2},h_{eightOfLabels}\\\\right)","showLabel": true,"label": "${d_{3}}","hidden": true,"dragMode": "NONE","clickableInfo": {"enabled": true,"latex": "e_{diting}\\\\to3"}},{"type": "expression","id": "d4Label","color": "#c74440","latex": "\\\\left(\\\\operatorname{total}\\\\left(d\\\\left[1...3\\\\right]\\\\right)+\\\\frac{d_{4}}{2},h_{eightOfLabels}\\\\right)","showLabel": true,"label": "${d_{4}}","hidden": true,"dragMode": "NONE","clickableInfo": {"enabled": true,"latex": "e_{diting}\\\\to4"}},{"type": "expression","id": "d5Label","color": "#c74440","latex": "\\\\left(\\\\operatorname{total}\\\\left(d\\\\left[1...4\\\\right]\\\\right)+\\\\frac{d_{5}}{2},h_{eightOfLabels}\\\\right)","showLabel": true,"label": "${d_{5}}","hidden": true,"dragMode": "NONE","clickableInfo": {"enabled": true,"latex": "e_{diting}\\\\to5"}},{"type": "expression","id": "d6Label","color": "#c74440","latex": "\\\\left(\\\\operatorname{total}\\\\left(d\\\\left[1...5\\\\right]\\\\right)+\\\\frac{d_{6}}{2},h_{eightOfLabels}\\\\right)","showLabel": true,"label": "${d_{6}}","hidden": true,"dragMode": "NONE","clickableInfo": {"enabled": true,"latex": "e_{diting}\\\\to6"}},{"type": "expression","id": "editing","color": "#c74440","latex": "e_{diting}=0"},{"type": "expression","id": "d0Label","color": "#c74440","showLabel": true}]},"includeFunctionParametersInRandomSeed": true,"doNotMigrateMovablePointStyle": true},			"Trapezoidal": {"version": 11,"randomSeed": "648a7506c06876ffdce20daeae0a5617","graph": {"viewport": {"xmin": -0.5,"ymin": -1,"xmax": 8.5,"ymax": 1},"showGrid": false,"showXAxis": false,"showYAxis": false,"squareAxes": false,"__v12ViewportLatexStash": {"xmin": "-0.5","xmax": "8.5","ymin": "-1","ymax": "1"}},"expressions": {"list": [{"type": "expression","id": "baseLine","color": "#000000","latex": "y=0\\\\left\\\\{0\\\\le x\\\\le\\\\operatorname{total}\\\\left(d\\\\right)\\\\right\\\\}","lineWidth": "1"},{"type": "expression","id": "HeightOfLabels","color": "#2d70b3","latex": "h_{eightOfLabels}=-0.4"},{"type": "expression","id": "d","color": "#388c46","latex": "d=\\\\left[d_{1},d_{2},d_{3},d_{4},d_{5}\\\\right]"},{"type": "expression","id": "total","color": "#6042a6","latex": "t_{otal}=\\\\operatorname{total}\\\\left(d\\\\right)"},{"type": "expression","id": "d1","color": "#000000","latex": "d_{1}=2","slider": {"hardMin": true,"min": "0","max": ""}},{"type": "expression","id": "d2","color": "#c74440","latex": "d_{2}=1","slider": {"hardMin": true,"min": "0","max": ""}},{"type": "expression","id": "d3","color": "#2d70b3","latex": "d_{3}=2","slider": {"hardMin": true,"min": "0"}},{"type": "expression","id": "d4","color": "#388c46","latex": "d_{4}=1","slider": {"hardMin": true,"min": "0","max": ""}},{"type": "expression","id": "d5","color": "#6042a6","latex": "d_{5}=2","slider": {"hardMin": true,"min": "0","max": ""}},{"type": "expression","id": "d1Point","color": "#c74440","latex": "\\\\left(d_{1},0\\\\right)"},{"type": "expression","id": "d2Point","color": "#c74440","latex": "\\\\left(d_{1}+d_{2},0\\\\right)"},{"type": "expression","id": "d3Point","color": "#c74440","latex": "\\\\left(d_{1}+d_{2}+d_{3},0\\\\right)"},{"type": "expression","id": "d4Point","color": "#c74440","latex": "\\\\left(d_{1}+d_{2}+d_{3}+d_{4},0\\\\right)"},{"type": "expression","id": "d5Point","color": "#c74440","latex": "\\\\left(d_{1}+d_{2}+d_{3}+d_{4}+d_{5},0\\\\right)"},{"type": "expression","id": "d1Label","color": "#c74440","latex": "\\\\left(\\\\frac{d_{1}}{2},h_{eightOfLabels}\\\\right)","showLabel": true,"label": "${d_{1}}","hidden": true,"dragMode": "NONE","clickableInfo": {"enabled": true,"latex": "e_{diting}\\\\to1"}},{"type": "expression","id": "d2Label","color": "#c74440","latex": "\\\\left(\\\\operatorname{total}\\\\left(d\\\\left[1...1\\\\right]\\\\right)+\\\\frac{d_{2}}{2},h_{eightOfLabels}\\\\right)","showLabel": true,"label": "${d_{2}}","hidden": true,"dragMode": "NONE","clickableInfo": {"enabled": true,"latex": "e_{diting}\\\\to2"}},{"type": "expression","id": "d3Label","color": "#c74440","latex": "\\\\left(\\\\operatorname{total}\\\\left(d\\\\left[1...2\\\\right]\\\\right)+\\\\frac{d_{3}}{2},h_{eightOfLabels}\\\\right)","showLabel": true,"label": "${d_{3}}","hidden": true,"dragMode": "NONE","clickableInfo": {"enabled": true,"latex": "e_{diting}\\\\to3"}},{"type": "expression","id": "d4Label","color": "#c74440","latex": "\\\\left(\\\\operatorname{total}\\\\left(d\\\\left[1...3\\\\right]\\\\right)+\\\\frac{d_{4}}{2},h_{eightOfLabels}\\\\right)","showLabel": true,"label": "${d_{4}}","hidden": true,"dragMode": "NONE","clickableInfo": {"enabled": true,"latex": "e_{diting}\\\\to4"}},{"type": "expression","id": "d5Label","color": "#c74440","latex": "\\\\left(\\\\operatorname{total}\\\\left(d\\\\left[1...4\\\\right]\\\\right)+\\\\frac{d_{5}}{2},h_{eightOfLabels}\\\\right)","showLabel": true,"label": "${d_{5}}","hidden": true,"dragMode": "NONE","clickableInfo": {"enabled": true,"latex": "e_{diting}\\\\to5"}},{"type": "expression","id": "editing","color": "#c74440","latex": "e_{diting}=0"},{"type": "expression","id": "d0Label","color": "#c74440","showLabel": true}]},"includeFunctionParametersInRandomSeed": true,"doNotMigrateMovablePointStyle": true},			"KerbAndChannel": {"version": 11,"randomSeed": "648a7506c06876ffdce20daeae0a5617","graph": {"viewport": {"xmin": -0.5,"ymin": -1,"xmax": 4.8,"ymax": 1},"showGrid": false,"showXAxis": false,"showYAxis": false,"squareAxes": false,"__v12ViewportLatexStash": {"xmin": "-0.5","xmax": "4.8","ymin": "-1","ymax": "1"}},"expressions": {"list": [{"type": "expression","id": "baseLine","color": "#000000","latex": "y=0\\\\left\\\\{0\\\\le x\\\\le\\\\operatorname{total}\\\\left(d\\\\right)\\\\right\\\\}","lineWidth": "1"},{"type": "expression","id": "HeightOfLabels","color": "#2d70b3","latex": "h_{eightOfLabels}=-0.4"},{"type": "expression","id": "d","color": "#388c46","latex": "d=\\\\left[d_{1},d_{2},d_{3},d_{4}\\\\right]"},{"type": "expression","id": "total","color": "#6042a6","latex": "t_{otal}=\\\\operatorname{total}\\\\left(d\\\\right)"},{"type": "expression","id": "d1","color": "#000000","latex": "d_{1}=2","slider": {"hardMin": true,"min": "0","max": ""}},{"type": "expression","id": "d2","color": "#c74440","latex": "d_{2}=0.05","slider": {"hardMin": true,"min": "0","max": ""}},{"type": "expression","id": "d3","color": "#2d70b3","latex": "d_{3}=0.45","slider": {"hardMin": true,"min": "0"}},{"type": "expression","id": "d4","color": "#388c46","latex": "d_{4}=1.8","slider": {"hardMin": true,"min": "0","max": ""}},{"type": "expression","id": "d1Point","color": "#c74440","latex": "\\\\left(d_{1},0\\\\right)"},{"type": "expression","id": "d2Point","color": "#c74440","latex": "\\\\left(d_{1}+d_{2},0\\\\right)"},{"type": "expression","id": "d3Point","color": "#c74440","latex": "\\\\left(d_{1}+d_{2}+d_{3},0\\\\right)"},{"type": "expression","id": "d4Point","color": "#c74440","latex": "\\\\left(d_{1}+d_{2}+d_{3}+d_{4},0\\\\right)"},{"type": "expression","id": "d1Label","color": "#c74440","latex": "\\\\left(\\\\frac{d_{1}}{2},h_{eightOfLabels}\\\\right)","showLabel": true,"label": "${d_{1}}","hidden": true,"dragMode": "NONE","clickableInfo": {"enabled": true,"latex": "e_{diting}\\\\to1"}},{"type": "expression","id": "d2Label","color": "#c74440","latex": "\\\\left(\\\\operatorname{total}\\\\left(d\\\\left[1...1\\\\right]\\\\right)+\\\\frac{d_{2}}{2},h_{eightOfLabels}\\\\right)","showLabel": true,"label": "${d_{2}}","hidden": true,"dragMode": "NONE","clickableInfo": {"enabled": true,"latex": "e_{diting}\\\\to2"}},{"type": "expression","id": "d3Label","color": "#c74440","latex": "\\\\left(\\\\operatorname{total}\\\\left(d\\\\left[1...2\\\\right]\\\\right)+\\\\frac{d_{3}}{2},h_{eightOfLabels}\\\\right)","showLabel": true,"label": "${d_{3}}","hidden": true,"dragMode": "NONE","clickableInfo": {"enabled": true,"latex": "e_{diting}\\\\to3"}},{"type": "expression","id": "d4Label","color": "#c74440","latex": "\\\\left(\\\\operatorname{total}\\\\left(d\\\\left[1...3\\\\right]\\\\right)+\\\\frac{d_{4}}{2},h_{eightOfLabels}\\\\right)","showLabel": true,"label": "${d_{4}}","hidden": true,"dragMode": "NONE","clickableInfo": {"enabled": true,"latex": "e_{diting}\\\\to4"}},{"type": "expression","id": "editing","color": "#c74440","latex": "e_{diting}=0"},{"type": "expression","id": "d0Label","color": "#c74440","showLabel": true}]},"includeFunctionParametersInRandomSeed": true,"doNotMigrateMovablePointStyle": true},			"Roadway": {"version": 11,"randomSeed": "648a7506c06876ffdce20daeae0a5617","graph": {"viewport": {"xmin": -0.5,"ymin": -1,"xmax": 15.7,"ymax": 1},"showGrid": false,"showXAxis": false,"showYAxis": false,"squareAxes": false,"__v12ViewportLatexStash": {"xmin": "-0.5","xmax": "15.7","ymin": "-1","ymax": "1"}},"expressions": {"list": [{"type": "expression","id": "baseLine","color": "#000000","latex": "y=0\\\\left\\\\{0\\\\le x\\\\le\\\\operatorname{total}\\\\left(d\\\\right)\\\\right\\\\}","lineWidth": "1"},{"type": "expression","id": "HeightOfLabels","color": "#2d70b3","latex": "h_{eightOfLabels}=-0.4"},{"type": "expression","id": "d","color": "#388c46","latex": "d=\\\\left[d_{1},d_{2},d_{3},d_{4},d_{5},d_{6},d_{7},d_{8},d_{9},d_{10},d_{11},d_{12}\\\\right]"},{"type": "expression","id": "total","color": "#6042a6","latex": "t_{otal}=\\\\operatorname{total}\\\\left(d\\\\right)"},{"type": "expression","id": "d1","color": "#000000","latex": "d_{1}=1.5","slider": {"hardMin": true,"min": "0","max": ""}},{"type": "expression","id": "d2","color": "#c74440","latex": "d_{2}=2","slider": {"hardMin": true,"min": "0","max": ""}},{"type": "expression","id": "d3","color": "#2d70b3","latex": "d_{3}=0.05","slider": {"hardMin": true,"min": "0","max": ""}},{"type": "expression","id": "d4","color": "#388c46","latex": "d_{4}=0.45","slider": {"hardMin": true,"min": "0","max": ""}},{"type": "expression","id": "d5","color": "#6042a6","latex": "d_{5}=1.8","slider": {"hardMin": true,"min": "0","max": ""}},{"type": "expression","id": "d6","color": "#000000","latex": "d_{6}=1.8","slider": {"hardMin": true,"min": "0","max": ""}},{"type": "expression","id": "d7","color": "#c74440","latex": "d_{7}=1.8","slider": {"hardMin": true,"min": "0","max": ""}},{"type": "expression","id": "d8","color": "#2d70b3","latex": "d_{8}=1.8","slider": {"hardMin": true,"min": "0","max": ""}},{"type": "expression","id": "d9","color": "#388c46","latex": "d_{9}=0.45","slider": {"hardMin": true,"min": "0","max": ""}},{"type": "expression","id": "d10","color": "#6042a6","latex": "d_{10}=0.05","slider": {"hardMin": true,"min": "0","max": ""}},{"type": "expression","id": "d11","color": "#000000","latex": "d_{11}=2","slider": {"hardMin": true,"min": "0","max": ""}},{"type": "expression","id": "d12","color": "#c74440","latex": "d_{12}=1.5","slider": {"hardMin": true,"min": "0","max": ""}},{"type": "expression","id": "d1Point","color": "#c74440","latex": "\\\\left(d_{1},0\\\\right)"},{"type": "expression","id": "d2Point","color": "#c74440","latex": "\\\\left(d_{1}+d_{2},0\\\\right)"},{"type": "expression","id": "d3Point","color": "#c74440","latex": "\\\\left(d_{1}+d_{2}+d_{3},0\\\\right)"},{"type": "expression","id": "d4Point","color": "#c74440","latex": "\\\\left(d_{1}+d_{2}+d_{3}+d_{4},0\\\\right)"},{"type": "expression","id": "d5Point","color": "#c74440","latex": "\\\\left(d_{1}+d_{2}+d_{3}+d_{4}+d_{5},0\\\\right)"},{"type": "expression","id": "d6Point","color": "#c74440","latex": "\\\\left(d_{1}+d_{2}+d_{3}+d_{4}+d_{5}+d_{6},0\\\\right)"},{"type": "expression","id": "d7Point","color": "#c74440","latex": "\\\\left(d_{1}+d_{2}+d_{3}+d_{4}+d_{5}+d_{6}+d_{7},0\\\\right)"},{"type": "expression","id": "d8Point","color": "#c74440","latex": "\\\\left(d_{1}+d_{2}+d_{3}+d_{4}+d_{5}+d_{6}+d_{7}+d_{8},0\\\\right)"},{"type": "expression","id": "d9Point","color": "#c74440","latex": "\\\\left(d_{1}+d_{2}+d_{3}+d_{4}+d_{5}+d_{6}+d_{7}+d_{8}+d_{9},0\\\\right)"},{"type": "expression","id": "d10Point","color": "#c74440","latex": "\\\\left(d_{1}+d_{2}+d_{3}+d_{4}+d_{5}+d_{6}+d_{7}+d_{8}+d_{9}+d_{10},0\\\\right)"},{"type": "expression","id": "d11Point","color": "#c74440","latex": "\\\\left(d_{1}+d_{2}+d_{3}+d_{4}+d_{5}+d_{6}+d_{7}+d_{8}+d_{9}+d_{10}+d_{11},0\\\\right)"},{"type": "expression","id": "d12Point","color": "#c74440","latex": "\\\\left(d_{1}+d_{2}+d_{3}+d_{4}+d_{5}+d_{6}+d_{7}+d_{8}+d_{9}+d_{10}+d_{11}+d_{12},0\\\\right)"},{"type": "expression","id": "d1Label","color": "#c74440","latex": "\\\\left(\\\\frac{d_{1}}{2},h_{eightOfLabels}\\\\right)","showLabel": true,"label": "${d_{1}}","hidden": true,"dragMode": "NONE","clickableInfo": {"enabled": true,"latex": "e_{diting}\\\\to1"}},{"type": "expression","id": "d2Label","color": "#c74440","latex": "\\\\left(\\\\operatorname{total}\\\\left(d\\\\left[1...1\\\\right]\\\\right)+\\\\frac{d_{2}}{2},h_{eightOfLabels}\\\\right)","showLabel": true,"label": "${d_{2}}","hidden": true,"dragMode": "NONE","clickableInfo": {"enabled": true,"latex": "e_{diting}\\\\to2"}},{"type": "expression","id": "d3Label","color": "#c74440","latex": "\\\\left(\\\\operatorname{total}\\\\left(d\\\\left[1...2\\\\right]\\\\right)+\\\\frac{d_{3}}{2},h_{eightOfLabels}\\\\right)","showLabel": true,"label": "${d_{3}}","hidden": true,"dragMode": "NONE","clickableInfo": {"enabled": true,"latex": "e_{diting}\\\\to3"}},{"type": "expression","id": "d4Label","color": "#c74440","latex": "\\\\left(\\\\operatorname{total}\\\\left(d\\\\left[1...3\\\\right]\\\\right)+\\\\frac{d_{4}}{2},h_{eightOfLabels}\\\\right)","showLabel": true,"label": "${d_{4}}","hidden": true,"dragMode": "NONE","clickableInfo": {"enabled": true,"latex": "e_{diting}\\\\to4"}},{"type": "expression","id": "d5Label","color": "#c74440","latex": "\\\\left(\\\\operatorname{total}\\\\left(d\\\\left[1...4\\\\right]\\\\right)+\\\\frac{d_{5}}{2},h_{eightOfLabels}\\\\right)","showLabel": true,"label": "${d_{5}}","hidden": true,"dragMode": "NONE","clickableInfo": {"enabled": true,"latex": "e_{diting}\\\\to5"}},{"type": "expression","id": "d6Label","color": "#c74440","latex": "\\\\left(\\\\operatorname{total}\\\\left(d\\\\left[1...5\\\\right]\\\\right)+\\\\frac{d_{6}}{2},h_{eightOfLabels}\\\\right)","showLabel": true,"label": "${d_{6}}","hidden": true,"dragMode": "NONE","clickableInfo": {"enabled": true,"latex": "e_{diting}\\\\to6"}},{"type": "expression","id": "d7Label","color": "#c74440","latex": "\\\\left(\\\\operatorname{total}\\\\left(d\\\\left[1...6\\\\right]\\\\right)+\\\\frac{d_{7}}{2},h_{eightOfLabels}\\\\right)","showLabel": true,"label": "${d_{7}}","hidden": true,"dragMode": "NONE","clickableInfo": {"enabled": true,"latex": "e_{diting}\\\\to7"}},{"type": "expression","id": "d8Label","color": "#c74440","latex": "\\\\left(\\\\operatorname{total}\\\\left(d\\\\left[1...7\\\\right]\\\\right)+\\\\frac{d_{8}}{2},h_{eightOfLabels}\\\\right)","showLabel": true,"label": "${d_{8}}","hidden": true,"dragMode": "NONE","clickableInfo": {"enabled": true,"latex": "e_{diting}\\\\to8"}},{"type": "expression","id": "d9Label","color": "#c74440","latex": "\\\\left(\\\\operatorname{total}\\\\left(d\\\\left[1...8\\\\right]\\\\right)+\\\\frac{d_{9}}{2},h_{eightOfLabels}\\\\right)","showLabel": true,"label": "${d_{9}}","hidden": true,"dragMode": "NONE","clickableInfo": {"enabled": true,"latex": "e_{diting}\\\\to9"}},{"type": "expression","id": "d10Label","color": "#c74440","latex": "\\\\left(\\\\operatorname{total}\\\\left(d\\\\left[1...9\\\\right]\\\\right)+\\\\frac{d_{10}}{2},h_{eightOfLabels}\\\\right)","showLabel": true,"label": "${d_{10}}","hidden": true,"dragMode": "NONE","clickableInfo": {"enabled": true,"latex": "e_{diting}\\\\to10"}},{"type": "expression","id": "d11Label","color": "#c74440","latex": "\\\\left(\\\\operatorname{total}\\\\left(d\\\\left[1...10\\\\right]\\\\right)+\\\\frac{d_{11}}{2},h_{eightOfLabels}\\\\right)","showLabel": true,"label": "${d_{11}}","hidden": true,"dragMode": "NONE","clickableInfo": {"enabled": true,"latex": "e_{diting}\\\\to11"}},{"type": "expression","id": "d12Label","color": "#c74440","latex": "\\\\left(\\\\operatorname{total}\\\\left(d\\\\left[1...11\\\\right]\\\\right)+\\\\frac{d_{12}}{2},h_{eightOfLabels}\\\\right)","showLabel": true,"label": "${d_{12}}","hidden": true,"dragMode": "NONE","clickableInfo": {"enabled": true,"latex": "e_{diting}\\\\to12"}},{"type": "expression","id": "editing","color": "#c74440","latex": "e_{diting}=0"},{"type": "expression","id": "d0Label","color": "#c74440","showLabel": true}]},"includeFunctionParametersInRandomSeed": true,"doNotMigrateMovablePointStyle": true}}}}');
+//#endregion
+//#region script.js
+//#region Setup Graphs
+const mainCalculatorContainer = document.getElementById('mainCalculator');
+const mainCalculator = Desmos.GraphingCalculator(mainCalculatorContainer, settings);
+const distancesCalculatorContainer = document.getElementById('distancesCalculator');
+const distancesCalculator = Desmos.GraphingCalculator(distancesCalculatorContainer, settings);
+let mainLoaded = false;
+let distancesLoaded = false;
+let ready = false;
+//#endregion
+//#region Channel Type
+mainCalculator.setState(Defaults.Main.Roadway);
+distancesCalculator.setState(Defaults.Distances.Roadway);
+
+const channelTypeDropdown = document.getElementById('channelType');
+channelTypeDropdown.addEventListener('change', function() {
+	if (modified && !confirm('You have unsaved changes. Do you want to continue?')) return;
+	setModified(false);
+	const selectedType = channelTypeDropdown.value;
+	mainCalculator.setState(Defaults.Main[selectedType]);
+	distancesCalculator.setState(Defaults.Distances[selectedType]);
+	ready = false;
+	mainLoaded = false;
+	distancesLoaded = false;
+});
+//#endregion
+//#region Bounds
+let upperX = 12.5;
+let lowerX = -0.5;
+let upperY = 5;
+let lowerY = -5;
+
+function updateBounds() {
+	mainCalculator.setMathBounds({
+		xmin: lowerX,
+		xmax: upperX,
+		ymin: lowerY,
+		ymax: upperY
+	});
+	distancesCalculator.setMathBounds({
+		xmin: lowerX,
+		xmax: upperX,
+		ymin: -1,
+		ymax: 1
+	});
+}
+//#endregion
+//#region Graph Changes
+mainCalculator.observe('expressionAnalysis', function () {
+	console.log('updated mainCalculator. Distances Loaded:', distancesLoaded, 'Main Loaded:', mainLoaded, 'Ready:', ready);
+	const currentValues = Object.entries(mainCalculator.expressionAnalysis)
+		.reduce((acc, [id, analysis]) => { if (analysis.evaluation) acc[id] = analysis.evaluation.value; return acc; }, {});
+	if (currentValues.MinY == undefined) return;
+
+	if(ready) setModified(true);
+	if (mainLoaded && distancesLoaded) ready = true;
+	if (distancesLoaded)mainLoaded = true;
+
+	const topBottomPadding = (currentValues.MaxY - currentValues.MinY) * 0.1;
+	upperY = currentValues.MaxY + topBottomPadding;
+	lowerY = currentValues.MinY - topBottomPadding;
+	updateBounds();
+
+	mainCalculator.setExpression({ id: `p${heightEditing}Label`, showLabel: true });
+	heightEditing = currentValues.editing;
+	if (currentValues.editing != 0) {
+		let x = 0;
+		for (let i=0; i<heightEditing-1; i++) {
+			x += currentValues.d[i];
+		}
+		const y = currentValues[`h${heightEditing}`] || 0;
+
+		const pos = mainCalculator.mathToPixels({ x, y });
+
+		heightEditor.setAttribute('type', 'number');
+		heightEditor.style.top = `${pos.y + mainCalculatorContainer.getBoundingClientRect().y}px`;
+		heightEditor.style.left = `${pos.x + mainCalculatorContainer.getBoundingClientRect().x + 20}px`;
+		heightEditor.value = y;
+		heightEditor.focus();
+		heightEditor.select();
+
+		mainCalculator.setExpression({ id: `p${heightEditing}Label`, showLabel: false });
+	}
+
+	mainCalculator.setExpression({ id: 'WaterLevelLabel', showLabel: true });
+	waterEditing = currentValues.waterEditing;
+	if (waterEditing != 0) {
+		const pos = mainCalculator.mathToPixels({ x: 0, y: currentValues.WaterLevel });
+
+		waterEditor.setAttribute('type', 'number');
+		waterEditor.style.top = `${pos.y + mainCalculatorContainer.getBoundingClientRect().y - 10}px`;
+		waterEditor.style.left = `${pos.x + mainCalculatorContainer.getBoundingClientRect().x + 20}px`;
+		waterEditor.value = currentValues.WaterLevel;
+		waterEditor.focus();
+		waterEditor.select();
+
+		mainCalculator.setExpression({ id: 'WaterLevelLabel', showLabel: false });
+	}
+
+	updateCalculations(currentValues);
+});
+
+distancesCalculator.observe('expressionAnalysis', function () {
+	console.log('updated distancesCalculator. Distances Loaded:', distancesLoaded, 'Main Loaded:', mainLoaded, 'Ready:', ready);
+	const currentValues = Object.entries(distancesCalculator.expressionAnalysis)
+		.reduce((acc, [id, analysis]) => { if (analysis.evaluation) acc[id] = analysis.evaluation.value; return acc; }, {});
+	if (currentValues.total == undefined) return;
+
+	if(ready) setModified(true);
+	if (mainLoaded && distancesLoaded) ready = true;
+	distancesLoaded = true;
+
+	upperX = currentValues.total + 0.5;
+	updateBounds();
+
+	mainCalculator.setExpression({
+		id: 'd',
+		latex: 'd=\\left['+currentValues.d.join(',')+'\\right]'
+	});
+
+	distancesCalculator.setExpression({ id: `d${distanceEditing}Label`, showLabel: true });
+	distanceEditing = currentValues.editing;
+	if (distanceEditing != 0) {
+		let x = 0;
+		for (let i=0; i<distanceEditing-1; i++) {
+			x += currentValues.d[i];
+		}
+		x += currentValues.d[distanceEditing-1] / 2;
+		const y = currentValues.HeightOfLabels || 0;
+
+		const pos = distancesCalculator.mathToPixels({ x, y });
+
+		distanceEditor.setAttribute('type', 'number');
+		distanceEditor.style.top = `${pos.y + distancesCalculatorContainer.getBoundingClientRect().y - 5}px`;
+		distanceEditor.style.left = `${pos.x + distancesCalculatorContainer.getBoundingClientRect().x - 25}px`;
+		distanceEditor.value = currentValues.d[distanceEditing-1];
+		distanceEditor.focus();
+		distanceEditor.select();
+
+		distancesCalculator.setExpression({ id: `d${distanceEditing}Label`, showLabel: false });
+	}
+});
+//#endregion
+//#region Calculations
+var heightEditing = 0;
+var distanceEditing = 0;
+var waterEditing = 0;
+
+const heightEditor = document.getElementById('heightEditor');
+const distanceEditor = document.getElementById('distanceEditor');
+const waterEditor = document.getElementById('waterEditor');
+
+const spans = {
+	wettedPerimeter: document.getElementById('wettedPerimeter'),
+	wettedArea: document.getElementById('wettedArea'),
+	velocity: document.getElementById('velocity'),
+	flowrate: document.getElementById('flowrate'),
+	flowrateL: document.getElementById('flowrateL'),
+	depth: document.getElementById('depth'),
+	depthVelocity: document.getElementById('depthVelocity'),
+	hydraulicRadius: document.getElementById('hydraulicRadius'),
+}
+function updateCalculations(currentValues) {
+	spans.wettedPerimeter.textContent = (currentValues.WettedPerimeter ?? 0).toFixed(3) + 'm';
+	spans.wettedArea.textContent = (currentValues.WettedArea ?? 0).toFixed(3) + 'm²';
+	spans.velocity.textContent = (currentValues.Velocity ?? 0).toFixed(3) + 'm/s';
+	spans.flowrate.textContent = (currentValues.Flowrate ?? 0).toFixed(3) + 'm³/s';
+	spans.flowrateL.textContent = (currentValues.Flowrate ? (currentValues.Flowrate * 1000).toFixed(0) : 0) + 'L/s';
+	spans.depth.textContent = (currentValues.Depth ?? 0).toFixed(3) + 'm';
+	spans.depthVelocity.textContent = ((currentValues.Depth * currentValues.Velocity) ?? 0).toFixed(3) + 'm²/s';
+	spans.hydraulicRadius.textContent = (currentValues.HydraulicRadius ?? 0).toFixed(3) + 'm';
+}
+//#endregion
+//#region Editors
+function setDistance() {
+	const value = parseFloat(distanceEditor.value);
+	if (isNaN(value)) return;
+	distancesCalculator.setExpression({
+		id: `d${distanceEditing}`,
+		latex: `d_{${distanceEditing}}=${value}`
+	});
+}
+function setHeight() {
+	const value = parseFloat(heightEditor.value);
+	if (isNaN(value)) return;
+	mainCalculator.setExpression({
+		id: `h${heightEditing}`,
+		latex: `h_{${heightEditing}}=${value}`
+	});
+}
+function setWaterLevel() {
+	const value = parseFloat(waterEditor.value);
+	if (isNaN(value)) return;
+	mainCalculator.setExpression({
+		id: 'WaterLevel',
+		latex: `w_{aterLevel}=${value}`
+	});
+}
+function exitHeightEditing() {
+	setHeight();
+	heightEditor.setAttribute('type', 'hidden');
+	mainCalculator.setExpression({ id: 'editing', latex: 'e_{diting}=0' });
+}
+function exitDistanceEditing() {
+	setDistance();
+	distanceEditor.setAttribute('type', 'hidden');
+	distancesCalculator.setExpression({ id: 'editing', latex: 'e_{diting}=0' });
+}
+function exitWaterEditing() {
+	setWaterLevel();
+	waterEditor.setAttribute('type', 'hidden');
+	mainCalculator.setExpression({ id: 'waterEditing', latex: 'w_{aterEditing}=0' });
+}
+heightEditor.addEventListener('keypress', function(event) {
+	if (event.key === 'Enter')
+		exitHeightEditing();
+});
+distanceEditor.addEventListener('keypress', function(event) {
+	if (event.key === 'Enter')
+		exitDistanceEditing();
+});
+waterEditor.addEventListener('keypress', function(event) {
+	if (event.key === 'Enter')
+		exitWaterEditing();
+});
+heightEditor.addEventListener('blur', function() {
+	exitHeightEditing();
+});
+distanceEditor.addEventListener('blur', function() {
+	exitDistanceEditing();
+});
+waterEditor.addEventListener('blur', function() {
+	exitWaterEditing();
+});
+//#endregion
+//#region Materials
+const materialsDropdown = document.getElementById('material');
+materialsDropdown.innerHTML = Object.entries(materialsJSON).map(([name, value]) => {
+	if (typeof value === 'object') {
+		return /*html*/`<optgroup label="${name}">${Object.entries(value).map(([subName, subValue]) => `<option value='{"value":"${subValue}","name":"${subName}"}'>${subName}: ${subValue}</option>`).join('')}</optgroup>`;
+	} else {
+		return /*html*/`<option value='{"value":"${value}","name":"${name}"}'>${name}: ${value}</option>`;
+	}
+}).join('');
+
+const customMaterial = document.getElementById('customMaterial');
+materialsDropdown.appendChild(new Option('Custom:', 'custom'));
+
+materialsDropdown.value = 'custom';
+materialsDropdown.dataset.chosen = 'custom';
+
+materialsDropdown.addEventListener('change', function() {
+	const selectedOption = materialsDropdown.options[materialsDropdown.selectedIndex];
+	materialsDropdown.dataset.chosen = selectedOption.value;
+	updateManningsCoefficient();
+});
+function updateManningsCoefficient() {
+	const selectedOption = materialsDropdown.options[materialsDropdown.selectedIndex];
+	mainCalculator.setExpression({
+		id: 'ManningsCoefficient',
+		latex: `N_{ManningsCoefficient}=${(selectedOption.value == 'custom')
+			? customMaterial.value : JSON.parse(selectedOption.value).value}`
+	});
+}
+customMaterial.addEventListener('change', updateManningsCoefficient);
+updateManningsCoefficient();
+//#endregion
+//#region Slope
+const longitudinalOption = document.getElementById('longitudinalOption');
+const riseRunOption = document.getElementById('riseRunOption');
+
+riseRunOption.addEventListener('click', toggleSlopeOptions);
+function toggleSlopeOptions() {
+	if (longitudinalOption.getAttribute('selected') == 'true') {
+		riseRunOption.removeEventListener('click', toggleSlopeOptions);
+		longitudinalOption.addEventListener('click', toggleSlopeOptions);
+		longitudinalOption.setAttribute('selected', 'false');
+		riseRunOption.setAttribute('selected', 'true');
+	}
+	else {
+		longitudinalOption.removeEventListener('click', toggleSlopeOptions);
+		riseRunOption.addEventListener('click', toggleSlopeOptions);
+		longitudinalOption.setAttribute('selected', 'true');
+		riseRunOption.setAttribute('selected', 'false');
+	}
+	updateGradient();
+}
+
+const longitudinalInput = document.getElementById('longitudinalInput');
+const riseInput = document.getElementById('Rise');
+const runInput = document.getElementById('Run');
+
+longitudinalInput.addEventListener('change', updateGradient);
+riseInput.addEventListener('change', updateGradient);
+runInput.addEventListener('change', updateGradient);
+
+function updateGradient() {
+	if (riseRunOption.getAttribute('selected') == 'true') {
+		const rise = parseFloat(riseInput.value);
+		const run = parseFloat(runInput.value);
+		if (isNaN(rise) || isNaN(run)) return;
+		const slope = rise / run;
+		mainCalculator.setExpression({
+			id: 'LongitudinalGradient',
+			latex: `L_{ongitudinalGradient}=${slope}`
+		});
+	}
+	else {
+		const value = parseFloat(longitudinalInput.value);
+		if (isNaN(value)) return;
+		mainCalculator.setExpression({
+			id: 'LongitudinalGradient',
+			latex: `L_{ongitudinalGradient}=${value/100}`
+		});
+	}
+}
+//#endregion
+//#region Project Details
+const projectNumberInput = document.getElementById('projectNumber');
+const projectNameInput = document.getElementById('projectName');
+//#endregion
+//#region Save/Load
+var modified = false;
+setModified(false);
+function setModified(to) {
+	modified = to;
+	document.getElementById('saveButton').disabled = !to;
+}
+fileManager.content = () => {
+	const currentMainValues = Object.entries(mainCalculator.expressionAnalysis)
+		.reduce((acc, [id, analysis]) => { if (analysis.evaluation) acc[id] = analysis.evaluation.value; return acc; }, {});
+	const currentDistancesValues = Object.entries(distancesCalculator.expressionAnalysis)
+		.reduce((acc, [id, analysis]) => { if (analysis.evaluation) acc[id] = analysis.evaluation.value; return acc; }, {});
+	return JSON.stringify({
+		projectNumber: projectNumberInput.value,
+		projectName: projectNameInput.value,
+		distances: currentDistancesValues.d,
+		heights: currentMainValues.h,
+		waterLevel: currentMainValues.WaterLevel,
+		material: {
+			dropdown: materialsDropdown.value,
+			custom: customMaterial.value,
+		},
+		slope: {
+			longitudinal: longitudinalInput.value,
+			rise: riseInput.value,
+			run: runInput.value,
+			type: riseRunOption.getAttribute('selected') === 'true' ? 'riseRun' : 'longitudinal'
+		},
+		type: channelTypeDropdown.value
+	});
+}
+async function load() {
+	if (modified && !confirm('You have unsaved changes. Do you want to continue?')) return;
+	const fileContent = await fileManager.openFile();
+	if (!fileContent) return;
+	const data = JSON.parse(fileContent);
+	channelTypeDropdown.value = data.type;
+	mainCalculator.setState(Defaults.Main[data.type]);
+	distancesCalculator.setState(Defaults.Distances[data.type]);
+
+	projectNumberInput.value = data.projectNumber || '';
+	projectNameInput.value = data.projectName || '';
+	for (let i = 0; i < data.distances.length; i++) {
+		distancesCalculator.setExpression({
+			id: `d${i+1}`,
+			latex: `d_{${i+1}}=${data.distances[i]}`
+		});
+	}
+	for (let i = 0; i < data.heights.length; i++) {
+		mainCalculator.setExpression({
+			id: `h${i+1}`,
+			latex: `h_{${i+1}}=${data.heights[i]}`
+		});
+	}
+	mainCalculator.setExpression({
+		id: 'WaterLevel',
+		latex: `w_{aterLevel}=${data.waterLevel || 0}`
+	});
+	materialsDropdown.dataset.chosen = data.material.dropdown || 'custom';
+	materialsDropdown.value = data.material.dropdown || 'custom';
+	customMaterial.value = data.material.custom || '0.01';
+	updateManningsCoefficient();
+	longitudinalInput.value = data.slope.longitudinal || '1';
+	riseInput.value = data.slope.rise || '1';
+	runInput.value = data.slope.run || '100';
+	updateGradient();
+	setModified(false);
+}
+function save() {
+	fileManager.saveFile();
+	setModified(false);
+}
+function saveAs() {
+	fileManager.saveAs();
+	setModified(false);
+}
+document.getElementById('saveButton').addEventListener('click', save);
+document.getElementById('saveAsButton').addEventListener('click', saveAs);
+document.getElementById('loadButton').addEventListener('click', load);
+//#endregion
+//#region Print
+const mainCalcImage = document.getElementById('mainCalcImage');
+const distancesCalcImage = document.getElementById('distancesCalcImage');
+async function print() {
+	mainCalculator.asyncScreenshot({
+		width: 800,
+		height: 600,
+		showLabels: true,
+		format: 'svg'
+	}, function(string) {
+		mainCalcImage.innerHTML = string;
+		setTimeout(() => {
+			window.print();
+		}, 100); // Wait for images to load
+	});
+	distancesCalculator.asyncScreenshot({
+		width: 800,
+		height: 80,
+		showLabels: true,
+		format: 'svg'
+	}, function(string) {
+		distancesCalcImage.innerHTML = string;
+	});
+}
+document.getElementById('printButton').addEventListener('click', print);
+//#endregion
+//#region Keyboard Shortcuts
+window.addEventListener('keydown', function(event) {
+	if ((event.ctrlKey || event.metaKey) && event.shiftKey && event.code === 'KeyS') {
+		event.preventDefault();
+		saveAs();
+		return;
+	}
+
+	const ctrlFunctions = {
+		s: save,
+		o: load,
+		p: print,
+		m: () => console.log(mainCalculator.getState()),
+		d: () => console.log(distancesCalculator.getState()),
+	};
+	if ((event.ctrlKey || event.metaKey) && ctrlFunctions[event.key]) {
+		event.preventDefault();
+		ctrlFunctions[event.key]();
+	}
+});
+//#endregion
+//#region Navigation Guards
+window.addEventListener('beforeunload', function(event) {
+    const msg = `There are unsaved changes. Are you sure you want to leave?`;
+    if (modified) {
+      event.preventDefault();
+      event.returnValue = msg;
+    }
+});
+//#endregion
+//#endregion
+	</script>
+</body>
+</html>
