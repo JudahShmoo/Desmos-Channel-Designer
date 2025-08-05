@@ -460,3 +460,6 @@ window.addEventListener('beforeunload', function(event) {
     }
 });
 //#endregion
+//#region Finished Loading
+loadingIndicator.style.display = 'none';
+//#endregion
